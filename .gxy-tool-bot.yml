@@ -1,0 +1,21 @@
+api:
+  base_url: https://openrouter.ai/api/v1
+  model: z-ai/glm-5.2
+  max_tool_iterations: 10
+  temperature_plan: 0.4
+  temperature_generate: 0.2
+  max_context_chars: 100000
+
+exemplars:
+  - url: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/bcftools/bcftools_view.xml
+    macros: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/bcftools/macros.xml
+  - url: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/seqtk_seq.xml
+    macros: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/macros.xml
+
+site:
+  title: Galaxy Tool Request
+  repo: d-callan/tools-iuc
+  description: Request a new Galaxy tool wrapper to be generated automatically.
+
+allowed_maintainers:
+  - d-callan
