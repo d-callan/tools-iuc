@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<macros>
+    <token name="@TOOL_VERSION@">3.1.2</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">iqtree</xref>
+        </xrefs>
+    </xml>
+
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">iqtree</requirement>
+        </requirements>
+    </xml>
+
+    <xml name="version_command">
+        <version_command>iqtree --version 2>&amp;1 | head -1</version_command>
+    </xml>
+
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="ERROR:"/>
+            <regex match="Error:"/>
+        </stdio>
+    </xml>
+
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1093/molbev/msag117</citation>
+            <citation type="doi">10.1093/molbev/msu300</citation>
+            <citation type="doi">10.1093/molbev/mst024</citation>
+            <yield />
+        </citations>
+    </xml>
+
+    <xml name="alignment_input">
+        <param name="alignment" type="data" format="phylip,fasta,nexus,clustal,iphylip,phyliprelaxed" label="Input alignment file" help="Alignment in PHYLIP, FASTA, NEXUS, CLUSTAL or MSF format (-s)" />
+    </xml>
+
+    <xml name="sequence_type">
+        <param name="st" type="select" label="Sequence type" optional="true" help="Override auto-detected sequence type (-st)">
+            <option value="DNA">DNA</option>
+            <option value="AA">Amino acid (AA)</option>
+            <option value="BIN">Binary (BIN)</option>
+            <option value="MORPH">Morphological (MORPH)</option>
+            <option value="CODON">Codon</option>
+            <option value="NT2AA">DNA-to-AA translated (NT2AA)</option>
+        </param>
+    </xml>
+
+    <xml name="outgroup">
+        <param name="outgroup" type="text" label="Outgroup taxon name" optional="true" help="Root the tree on this taxon (-o). Default: first taxon in alignment" />
+    </xml>
+
+    <xml name="seed">
+        <param name="seed" type="integer" label="Random seed" optional="true" help="Specify a random number seed to reproduce a previous run (-seed)" />
+    </xml>
+</macros>

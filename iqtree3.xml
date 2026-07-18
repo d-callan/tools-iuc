@@ -1,0 +1,386 @@
+<?xml version="1.0"?>
+<tool id="iqtree3" name="IQ-TREE 3" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Efficient phylogenomic inference by maximum likelihood</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools" />
+    <expand macro="requirements" />
+    <expand macro="version_command" />
+    <expand macro="stdio" />
+    <command detect_errors="aggressive"><![CDATA[
+## Set up prefix for output files
+#set $prefix = 'iqtree_output'
+
+iqtree
+-s '$alignment'
+-pre $prefix
+-T \${GALAXY_SLOTS:-4}
+
+#if $general.st:
+    -st $general.st
+#end if
+
+#if $general.outgroup:
+    -o '$general.outgroup'
+#end if
+
+#if $general.seed:
+    -seed $general.seed
+#end if
+
+## Substitution model
+#if str($model.model_selector.model_selector) == "auto":
+    -m $model.model_selector.model_auto
+    #if $model.model_selector.mset:
+        -mset '$model.model_selector.mset'
+    #end if
+    #if $model.model_selector.msub:
+        -msub $model.model_selector.msub
+    #end if
+    #if $model.model_selector.mfreq:
+        -mfreq '$model.model_selector.mfreq'
+    #end if
+    #if $model.model_selector.mrate:
+        -mrate '$model.model_selector.mrate'
+    #end if
+    #if str($model.model_selector.cmin):
+        -cmin $model.model_selector.cmin
+    #end if
+    #if str($model.model_selector.cmax):
+        -cmax $model.model_selector.cmax
+    #end if
+    #if $model.model_selector.mtree:
+        -mtree
+    #end if
+    #if $model.model_selector.madd:
+        -madd '$model.model_selector.madd'
+    #end if
+#else:
+    -m '$model.model_selector.model_spec'
+#end if
+
+## Partition model
+#if $partitions.partition_file:
+    $partitions.partition_type '$partitions.partition_file'
+#end if
+
+## Bootstrap / branch support
+#if $bootstrap.bootstrap_cond.bootstrap_type == "ufboot":
+    -bb $bootstrap.bootstrap_cond.bb_replicates
+    #if $bootstrap.bootstrap_cond.bnni:
+        -bnni
+    #end if
+    #if str($bootstrap.bootstrap_cond.nm):
+        -nm $bootstrap.bootstrap_cond.nm
+    #end if
+    #if str($bootstrap.bootstrap_cond.bcor):
+        -bcor $bootstrap.bootstrap_cond.bcor
+    #end if
+    #if $bootstrap.bootstrap_cond.bsam:
+        -bsam $bootstrap.bootstrap_cond.bsam
+    #end if
+#elif $bootstrap.bootstrap_cond.bootstrap_type == "nonparam":
+    -b $bootstrap.bootstrap_cond.b_replicates
+#elif $bootstrap.bootstrap_cond.bootstrap_type == "alrt":
+    -alrt $bootstrap.bootstrap_cond.alrt_replicates
+#elif $bootstrap.bootstrap_cond.bootstrap_type == "alrt_ufboot":
+    -alrt $bootstrap.bootstrap_cond.alrt_replicates
+    -bb $bootstrap.bootstrap_cond.bb_replicates2
+#end if
+
+#if $bootstrap.abayes:
+    -abayes
+#end if
+#if str($bootstrap.lbp):
+    -lbp $bootstrap.lbp
+#end if
+
+## Tree search options
+#if $tree_search.starting_tree:
+    -t '$tree_search.starting_tree'
+#end if
+#if $tree_search.constraint_tree:
+    -g '$tree_search.constraint_tree'
+#end if
+#if $tree_search.allnni:
+    -allnni
+#end if
+#if $tree_search.fast:
+    -fast
+#end if
+#if str($tree_search.nstop):
+    -nstop $tree_search.nstop
+#end if
+#if str($tree_search.pers):
+    -pers $tree_search.pers
+#end if
+#if str($tree_search.ninit):
+    -ninit $tree_search.ninit
+#end if
+#if str($tree_search.ntop):
+    -ntop $tree_search.ntop
+#end if
+#if str($tree_search.nbest):
+    -nbest $tree_search.nbest
+#end if
+
+## Advanced options
+#if $advanced.quiet:
+    -quiet
+#end if
+#if $advanced.keep_ident:
+    -keep-ident
+#end if
+#if $advanced.safe:
+    -safe
+#end if
+#if $advanced.redo:
+    -redo
+#end if
+#if str($advanced.blmin):
+    -blmin $advanced.blmin
+#end if
+#if str($advanced.blmax):
+    -blmax $advanced.blmax
+#end if
+#if $advanced.czb:
+    -czb
+#end if
+#if $advanced.alninfo:
+    -alninfo
+#end if
+
+## Move output files to Galaxy dataset paths
+&&
+cp $prefix.treefile '$treefile' 2>/dev/null || true
+&&
+cp $prefix.iqtree '$report' 2>/dev/null || true
+#if $bootstrap.bootstrap_cond.bootstrap_type != "none":
+&&
+cp $prefix.contree '$contree' 2>/dev/null || true
+#end if
+    ]]></command>
+    <inputs>
+        <expand macro="alignment_input" />
+
+        <section name="general" title="General Options" expanded="true">
+            <expand macro="sequence_type" />
+            <expand macro="outgroup" />
+            <expand macro="seed" />
+        </section>
+
+        <section name="model" title="Substitution Model" expanded="true">
+            <conditional name="model_selector">
+                <param name="model_selector" type="select" label="Model selection method" help="Choose automatic model selection or specify a model manually (-m)">
+                    <option value="auto" selected="true">Automatic model selection (ModelFinder)</option>
+                    <option value="manual">Specify model manually</option>
+                </param>
+                <when value="auto">
+                    <param name="model_auto" type="select" label="Model selection strategy" help="-m TEST / MFP etc.">
+                        <option value="MFP" selected="true">MFP: ModelFinder + tree inference (recommended)</option>
+                        <option value="MF">MF: ModelFinder only (no tree inference)</option>
+                        <option value="TEST">TEST: Standard model selection + tree inference</option>
+                        <option value="TESTONLY">TESTONLY: Standard model selection only</option>
+                        <option value="MFP+MERGE">MFP+MERGE: ModelFinder with partition merging + tree inference</option>
+                        <option value="MF+MERGE">MF+MERGE: ModelFinder with partition merging only</option>
+                        <option value="TESTMERGE">TESTMERGE: Standard selection with partition merging + tree inference</option>
+                        <option value="TESTMERGEONLY">TESTMERGEONLY: Standard selection with partition merging only</option>
+                    </param>
+                    <param name="mset" type="text" label="Restrict to model set" optional="true" help="Comma-separated list of base models or a program name (raxml, phyml, mrbayes). E.g. WAG,LG,JTT (-mset)" />
+                    <param name="msub" type="select" label="Restrict to AA model source" optional="true" help="Restrict to AA models designed for a specific source (-msub)">
+                        <option value="nuclear">nuclear</option>
+                        <option value="mitochondrial">mitochondrial</option>
+                        <option value="chloroplast">chloroplast</option>
+                        <option value="viral">viral</option>
+                    </param>
+                    <param name="mfreq" type="text" label="Frequency types" optional="true" help="Comma-separated list of frequency types, e.g. FU,F (-mfreq)" />
+                    <param name="mrate" type="text" label="Rate heterogeneity types" optional="true" help="Comma-separated list, e.g. E,I,G,I+G,R (-mrate)" />
+                    <param name="cmin" type="integer" label="Min FreeRate categories" optional="true" help="Minimum number of categories for FreeRate model (-cmin). Default: 2" />
+                    <param name="cmax" type="integer" label="Max FreeRate categories" optional="true" help="Maximum number of categories for FreeRate model (-cmax). Default: 10" />
+                    <param name="mtree" type="boolean" truevalue="true" falsevalue="" checked="false" label="Full tree search for each model" help="Turn on full tree search for each model considered (-mtree). More accurate but slower" />
+                    <param name="madd" type="text" label="Additional mixture models" optional="true" help="Comma-separated list of mixture models to additionally consider, e.g. LG4M,LG4X (-madd)" />
+                </when>
+                <when value="manual">
+                    <param name="model_spec" type="text" label="Model specification" value="GTR+I+G" help="Model string in the form MODEL+FreqType+RateType, e.g. GTR+I+G, LG+F+G, HKY+G (-m)" />
+                </when>
+            </conditional>
+        </section>
+
+        <section name="partitions" title="Partition Model" expanded="false">
+            <param name="partition_file" type="data" format="nexus,txt" optional="true" label="Partition file" help="Partition file in NEXUS or RAxML-style format" />
+            <param name="partition_type" type="select" label="Partition model type" help="Type of partition model to use">
+                <option value="-q" selected="true">Edge-equal (-q): all partitions share branch lengths</option>
+                <option value="-spp">Edge-proportional (-spp): partitions have different speeds</option>
+                <option value="-sp">Edge-unlinked (-sp): each partition has own branch lengths</option>
+            </param>
+        </section>
+
+        <section name="bootstrap" title="Branch Support / Bootstrap" expanded="true">
+            <conditional name="bootstrap_cond">
+                <param name="bootstrap_type" type="select" label="Bootstrap / branch support method" help="Choose a branch support method">
+                    <option value="none" selected="true">None</option>
+                    <option value="ufboot">Ultrafast bootstrap (UFBoot)</option>
+                    <option value="nonparam">Standard nonparametric bootstrap</option>
+                    <option value="alrt">SH-aLRT only</option>
+                    <option value="alrt_ufboot">SH-aLRT + UFBoot (recommended)</option>
+                </param>
+                <when value="none" />
+                <when value="ufboot">
+                    <param name="bb_replicates" type="integer" value="1000" min="1000" label="Number of UFBoot replicates" help="Recommended >= 1000 (-bb)" />
+                    <param name="bnni" type="boolean" truevalue="-bnni" falsevalue="" checked="true" label="Optimize UFBoot trees by NNI" help="Recommended in the presence of severe model violations (-bnni)" />
+                    <param name="nm" type="integer" label="Max iterations" optional="true" help="Maximum number of iterations to stop (-nm). Default: 1000" />
+                    <param name="bcor" type="float" label="Min correlation coefficient" optional="true" help="Minimum correlation coefficient for UFBoot convergence criterion (-bcor). Default: 0.99" />
+                    <param name="bsam" type="select" label="Resampling strategy for partitioned analysis" optional="true" help="Resampling strategy (-bsam)">
+                        <option value="GENE">GENE: resample partitions</option>
+                        <option value="GENESITE">GENESITE: resample partitions and sites within partitions</option>
+                    </param>
+                </when>
+                <when value="nonparam">
+                    <param name="b_replicates" type="integer" value="100" min="100" label="Number of bootstrap replicates" help="Recommended >= 100 (-b)" />
+                </when>
+                <when value="alrt">
+                    <param name="alrt_replicates" type="integer" value="1000" min="1000" label="Number of SH-aLRT replicates" help="Recommended >= 1000 (-alrt). Use 0 for parametric aLRT" />
+                </when>
+                <when value="alrt_ufboot">
+                    <param name="alrt_replicates" type="integer" value="1000" min="1000" label="Number of SH-aLRT replicates" help="Recommended >= 1000 (-alrt)" />
+                    <param name="bb_replicates2" type="integer" value="1000" min="1000" label="Number of UFBoot replicates" help="Recommended >= 1000 (-bb)" />
+                </when>
+            </conditional>
+            <param name="abayes" type="boolean" truevalue="-abayes" falsevalue="" checked="false" label="Approximate Bayes test" help="Perform approximate Bayes test (-abayes)" />
+            <param name="lbp" type="integer" label="Local bootstrap probability replicates" optional="true" help="Number of replicates for local BP method (-lbp). Recommended >= 1000" />
+        </section>
+
+        <section name="tree_search" title="Tree Search Options" expanded="false">
+            <param name="starting_tree" type="data" format="newick,nexus" optional="true" label="Starting tree" help="File containing a starting tree for tree search (-t). Use BIONJ or RANDOM for built-in starting trees" />
+            <param name="constraint_tree" type="data" format="newick,nexus" optional="true" label="Constraint tree" help="Topological constraint tree in NEWICK format (-g)" />
+            <param name="allnni" type="boolean" truevalue="-allnni" falsevalue="" checked="false" label="Thorough NNI search" help="Consider all possible NNIs (-allnni). Slower but more thorough" />
+            <param name="fast" type="boolean" truevalue="-fast" falsevalue="" checked="false" label="Fast tree search mode" help="Fast mode: only 2 starting trees optimized by NNI (-fast)" />
+            <param name="nstop" type="integer" label="Unsuccessful iterations to stop" optional="true" help="Number of unsuccessful iterations to stop (-nstop). Default: 100" />
+            <param name="pers" type="float" label="Perturbation strength" optional="true" help="Perturbation strength for randomized NNI, between 0 and 1 (-pers). Default: 0.5" />
+            <param name="ninit" type="integer" label="Number of initial parsimony trees" optional="true" help="Number of initial parsimony trees (-ninit). Default: 100" />
+            <param name="ntop" type="integer" label="Number of top initial trees" optional="true" help="Number of top initial parsimony trees to optimize with NNI (-ntop). Default: 20" />
+            <param name="nbest" type="integer" label="Number of candidate trees" optional="true" help="Number of trees in the candidate set (-nbest). Default: 5" />
+        </section>
+
+        <section name="advanced" title="Advanced Options" expanded="false">
+            <param name="quiet" type="boolean" truevalue="-quiet" falsevalue="" checked="false" label="Quiet mode" help="Suppress printing to screen (-quiet). Log file is still written" />
+            <param name="keep_ident" type="boolean" truevalue="-keep-ident" falsevalue="" checked="false" label="Keep identical sequences" help="Keep identical sequences in the alignment (-keep-ident). By default they are removed and added back at the end" />
+            <param name="safe" type="boolean" truevalue="-safe" falsevalue="" checked="false" label="Safe numerical mode" help="Avoid numerical underflow for large data sets (-safe)" />
+            <param name="redo" type="boolean" truevalue="-redo" falsevalue="" checked="false" label="Redo entire analysis" help="Redo the entire analysis, overwriting existing output files (-redo)" />
+            <param name="blmin" type="float" label="Minimum branch length" optional="true" help="Minimum branch length (-blmin). Default: the smaller of 0.000001 and 0.1/alignment_length" />
+            <param name="blmax" type="float" label="Maximum branch length" optional="true" help="Maximum branch length (-blmax). Default: 10" />
+            <param name="czb" type="boolean" truevalue="-czb" falsevalue="" checked="false" label="Collapse near-zero branches" help="Collapse near zero branches so the final tree may be multifurcating (-czb)" />
+            <param name="alninfo" type="boolean" truevalue="-alninfo" falsevalue="" checked="false" label="Print alignment site statistics" help="Print alignment site statistics to .alninfo file (-alninfo)" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="treefile" format="newick" label="${tool.name} tree on ${on_string}" />
+        <data name="report" format="txt" label="${tool.name} report on ${on_string}" />
+        <data name="contree" format="newick" label="${tool.name} consensus tree on ${on_string}">
+            <filter>bootstrap['bootstrap_cond']['bootstrap_type'] != "none"</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="alignment" ftype="fasta" value="test_alignment.fasta" />
+            <section name="general">
+                <param name="st" value="DNA" />
+            </section>
+            <section name="model">
+                <conditional name="model_selector">
+                    <param name="model_selector" value="manual" />
+                    <param name="model_spec" value="JC+G" />
+                </conditional>
+            </section>
+            <section name="bootstrap">
+                <conditional name="bootstrap_cond">
+                    <param name="bootstrap_type" value="none" />
+                </conditional>
+            </section>
+            <output name="treefile">
+                <assert_contents>
+                    <has_text text="(" />
+                    <has_text text=";" />
+                </assert_contents>
+            </output>
+            <output name="report">
+                <assert_contents>
+                    <has_text text="IQ-TREE" />
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="3">
+            <param name="alignment" ftype="fasta" value="test_alignment.fasta" />
+            <section name="general">
+                <param name="st" value="DNA" />
+            </section>
+            <section name="model">
+                <conditional name="model_selector">
+                    <param name="model_selector" value="manual" />
+                    <param name="model_spec" value="GTR+I+G" />
+                </conditional>
+            </section>
+            <section name="bootstrap">
+                <conditional name="bootstrap_cond">
+                    <param name="bootstrap_type" value="ufboot" />
+                    <param name="bb_replicates" value="1000" />
+                </conditional>
+            </section>
+            <output name="treefile">
+                <assert_contents>
+                    <has_text text="(" />
+                    <has_text text=";" />
+                </assert_contents>
+            </output>
+            <output name="report">
+                <assert_contents>
+                    <has_text text="IQ-TREE" />
+                </assert_contents>
+            </output>
+            <output name="contree">
+                <assert_contents>
+                    <has_text text="(" />
+                    <has_text text=";" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+**What it does**
+
+IQ-TREE 3 is a software for phylogenomic inference using maximum likelihood and complex evolutionary models. It can reconstruct phylogenetic trees from DNA, protein, codon, binary, and morphological alignments, perform model selection (ModelFinder), and assess branch support via ultrafast bootstrap (UFBoot), SH-aLRT, and other methods.
+
+**Key features**
+
+- **Model selection**: Automatic selection of best-fit substitution models via ModelFinder (``-m MFP``), including FreeRate rate heterogeneity models.
+- **Tree inference**: Maximum-likelihood tree reconstruction with an efficient stochastic search algorithm.
+- **Branch support**: Ultrafast bootstrap (UFBoot, ``-bb``), SH-aLRT (``-alrt``), approximate Bayes (``-abayes``), local bootstrap probability (``-lbp``), and standard nonparametric bootstrap (``-b``).
+- **Partition models**: Support for edge-equal (``-q``), edge-proportional (``-spp``), and edge-unlinked (``-sp``) partition models.
+- **Constraint trees**: Topological constraint trees for guided tree search (``-g``).
+
+**Usage**
+
+1. Provide an alignment file in PHYLIP, FASTA, NEXUS, CLUSTAL, or MSF format.
+2. Choose a substitution model: either let IQ-TREE select the best-fit model automatically (ModelFinder) or specify a model manually (e.g., ``GTR+I+G`` for DNA, ``LG+F+G`` for protein).
+3. Optionally select a branch support method. For most analyses, SH-aLRT + UFBoot with 1000 replicates each is recommended.
+4. Adjust tree search and advanced parameters as needed.
+
+**Output files**
+
+- **Tree file**: The best maximum-likelihood tree in NEWICK format (``.treefile``).
+- **Report file**: Detailed report with model parameters, log-likelihoods, and branch support values (``.iqtree``).
+- **Consensus tree**: Consensus tree from bootstrap analysis (``.contree``), only produced when a bootstrap method is selected.
+
+**Model specification**
+
+Models are specified as ``MODEL+FreqType+RateType``. Common examples:
+
+- ``GTR+I+G``: General time-reversible model with invariable sites and Gamma rate heterogeneity (DNA).
+- ``LG+F+G``: Le-Gascuel model with empirical frequencies and Gamma rate heterogeneity (protein).
+- ``HKY+G``: Hasegawa-Kishino-Yano model with Gamma rate heterogeneity (DNA).
+
+For more information, see the `IQ-TREE documentation <https://iqtree.github.io/doc/>`_.
+    ]]></help>
+    <expand macro="citations" />
+</tool>
