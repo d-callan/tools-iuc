@@ -40,6 +40,6 @@ body:
     attributes:
       label: Contact
       description: GitHub handle for follow-up questions (optional)
-      placeholder: @your-github-handle
+      placeholder: "@your-github-handle"
     validations:
       required: false
