@@ -4,7 +4,9 @@ on:
 
 jobs:
   generate:
-    if: github.event.label.name == 'ready-to-implement'
+    if: |
+      github.event.label.name == 'ready-to-implement' ||
+      github.event.label.name == 'retry-generate'
     runs-on: ubuntu-latest
     # Note: if allowed_maintainers is configured, the CLI verifies
     # github.event.actor is in the list and exits with code 1 if not.
@@ -14,6 +16,15 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install git+https://github.com/d-callan/gxy-tool-bot.git
+      - name: Remove retry-generate and generation-failed labels
+        if: github.event.label.name == 'retry-generate'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue edit ${{ github.event.issue.number }} \
+            --remove-label "retry-generate" || true
+          gh issue edit ${{ github.event.issue.number }} \
+            --remove-label "generation-failed" || true
       - name: Generate tool files
         id: generate
         env:
