@@ -12,10 +12,7 @@ exemplars:
   - url: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/seqtk_seq.xml
     macros: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/macros.xml
 
-site:
-  title: Galaxy Tool Request
-  repo: d-callan/tools-iuc
-  description: Request a new Galaxy tool wrapper to be generated automatically.
+repo: d-callan/tools-iuc
 
 allowed_maintainers:
   - d-callan
