@@ -42,10 +42,13 @@ jobs:
         run: |
           git config user.name "gxy-tool-bot"
           git config user.email "gxy-tool-bot@users.noreply.github.com"
+          TOOL_DIR=$(cat generated/.tool-name)
+          mkdir -p "tools/$TOOL_DIR"
+          cp -r generated/* "tools/$TOOL_DIR/"
+          rm -rf generated/
           BRANCH="tool-bot/issue-${{ github.event.issue.number }}"
           git checkout -b "$BRANCH"
-          cp -r generated/* .
-          git add -A
+          git add "tools/$TOOL_DIR/"
           git commit -m "Generate tool for issue #${{ github.event.issue.number }}
 
           Closes #${{ github.event.issue.number }}"
