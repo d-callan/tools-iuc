@@ -4,6 +4,7 @@ on:
     paths:
       - '.gxy-tool-bot.yml'
       - 'pyproject.toml'
+      - '.github/workflows/gxy-deploy-site.yml'
   workflow_dispatch:
 
 jobs:
