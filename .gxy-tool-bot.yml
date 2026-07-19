@@ -1,5 +1,5 @@
 api:
-  base_url: https://openrouter.ai/api/v1
+  base_url: https://llm.ai.e-infra.cz
   api_key_env: GXY_TOOL_BOT_API_KEY_CZ
   model: z-ai/glm-5.2
   max_tool_iterations: 25
