@@ -13,6 +13,3 @@ exemplars:
     macros: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/macros.xml
 
 repo: d-callan/tools-iuc
-
-allowed_maintainers:
-  - d-callan
