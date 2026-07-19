@@ -1,0 +1,185 @@
+<tool id="pmotools_extract_pmo" name="pmotools extract_pmo" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Extract subsets of a PMO by metadata, specimen names, library samples, targets, or read count</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python $extract_mode.subcommand
+  --file '$input_pmo'
+  --output '$output_pmo'
+  @OVERWRITE@
+#if $extract_mode.subcommand == "extract_pmo_with_selected_meta":
+  #if str($extract_mode.metaFieldsValues_source.metaFieldsValues_source_selector) == "text":
+    --metaFieldsValues '$extract_mode.metaFieldsValues_source.metaFieldsValues'
+  #elif str($extract_mode.metaFieldsValues_source.metaFieldsValues_source_selector) == "file":
+    --metaFieldsValues '$extract_mode.metaFieldsValues_source.metaFieldsValues_file'
+  #end if
+  #if $extract_mode.verbose:
+    --verbose
+  #end if
+#elif $extract_mode.subcommand == "extract_pmo_with_select_specimen_names":
+  #if str($extract_mode.specimen_names_source.specimen_names_source_selector) == "text":
+    --specimen_names '$extract_mode.specimen_names_source.specimen_names'
+  #elif str($extract_mode.specimen_names_source.specimen_names_source_selector) == "file":
+    --specimen_names '$extract_mode.specimen_names_source.specimen_names_file'
+  #end if
+  #if $extract_mode.verbose:
+    --verbose
+  #end if
+#elif $extract_mode.subcommand == "extract_pmo_with_select_library_sample_names":
+  #if str($extract_mode.library_sample_names_source.library_sample_names_source_selector) == "text":
+    --library_sample_names '$extract_mode.library_sample_names_source.library_sample_names'
+  #elif str($extract_mode.library_sample_names_source.library_sample_names_source_selector) == "file":
+    --library_sample_names '$extract_mode.library_sample_names_source.library_sample_names_file'
+  #end if
+  #if $extract_mode.verbose:
+    --verbose
+  #end if
+#elif $extract_mode.subcommand == "extract_pmo_with_select_targets":
+  #if str($extract_mode.targets_source.targets_source_selector) == "text":
+    --targets '$extract_mode.targets_source.targets'
+  #elif str($extract_mode.targets_source.targets_source_selector) == "file":
+    --targets '$extract_mode.targets_source.targets_file'
+  #end if
+  #if $extract_mode.verbose:
+    --verbose
+  #end if
+#elif $extract_mode.subcommand == "extract_pmo_with_read_filter":
+  --read_count_minimum $extract_mode.read_count_minimum
+#end if
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+        <conditional name="extract_mode">
+            <param name="subcommand" type="select" label="Extraction mode">
+                <option value="extract_pmo_with_selected_meta" selected="true">Extract by selected metadata</option>
+                <option value="extract_pmo_with_select_specimen_names">Extract by specimen names</option>
+                <option value="extract_pmo_with_select_library_sample_names">Extract by library sample names</option>
+                <option value="extract_pmo_with_select_targets">Extract by target names</option>
+                <option value="extract_pmo_with_read_filter">Extract by read count filter</option>
+            </param>
+            <when value="extract_pmo_with_selected_meta">
+                <conditional name="metaFieldsValues_source">
+                    <param name="metaFieldsValues_source_selector" type="select" label="Metadata field values input method">
+                        <option value="text" selected="true">Paste metadata field values</option>
+                        <option value="file">Upload a metadata field values file</option>
+                    </param>
+                    <when value="text">
+                        <param name="metaFieldsValues" type="text" label="Metadata field values" help="Format: field1=value1,value2,value3:field2=value1,value2"/>
+                    </when>
+                    <when value="file">
+                        <param name="metaFieldsValues_file" type="data" format="tabular,txt" label="Metadata field values file" help="A table with columns: field, values (and optionally group)"/>
+                    </when>
+                </conditional>
+                <param name="verbose" type="boolean" truevalue="true" falsevalue="" checked="false" label="Verbose output"/>
+            </when>
+            <when value="extract_pmo_with_select_specimen_names">
+                <conditional name="specimen_names_source">
+                    <param name="specimen_names_source_selector" type="select" label="Specimen names input method">
+                        <option value="text" selected="true">Paste specimen names</option>
+                        <option value="file">Upload a specimen names file</option>
+                    </param>
+                    <when value="text">
+                        <param name="specimen_names" type="text" label="Specimen names" help="Comma-separated specimen names"/>
+                    </when>
+                    <when value="file">
+                        <param name="specimen_names_file" type="data" format="txt,tabular" label="Specimen names file" help="Plain text file with one specimen name per line"/>
+                    </when>
+                </conditional>
+                <param name="verbose" type="boolean" truevalue="true" falsevalue="" checked="false" label="Verbose output"/>
+            </when>
+            <when value="extract_pmo_with_select_library_sample_names">
+                <conditional name="library_sample_names_source">
+                    <param name="library_sample_names_source_selector" type="select" label="Library sample names input method">
+                        <option value="text" selected="true">Paste library sample names</option>
+                        <option value="file">Upload a library sample names file</option>
+                    </param>
+                    <when value="text">
+                        <param name="library_sample_names" type="text" label="Library sample names" help="Comma-separated library sample names"/>
+                    </when>
+                    <when value="file">
+                        <param name="library_sample_names_file" type="data" format="txt,tabular" label="Library sample names file" help="Plain text file with one library sample name per line"/>
+                    </when>
+                </conditional>
+                <param name="verbose" type="boolean" truevalue="true" falsevalue="" checked="false" label="Verbose output"/>
+            </when>
+            <when value="extract_pmo_with_select_targets">
+                <conditional name="targets_source">
+                    <param name="targets_source_selector" type="select" label="Target names input method">
+                        <option value="text" selected="true">Paste target names</option>
+                        <option value="file">Upload a target names file</option>
+                    </param>
+                    <when value="text">
+                        <param name="targets" type="text" label="Target names" help="Comma-separated target names"/>
+                    </when>
+                    <when value="file">
+                        <param name="targets_file" type="data" format="txt,tabular" label="Target names file" help="Plain text file with one target name per line"/>
+                    </when>
+                </conditional>
+                <param name="verbose" type="boolean" truevalue="true" falsevalue="" checked="false" label="Verbose output"/>
+            </when>
+            <when value="extract_pmo_with_read_filter">
+                <param name="read_count_minimum" type="float" value="0" label="Minimum read count" help="The minimum read count (inclusive) for detected haplotypes to be kept"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output_pmo" format="json" label="Extracted PMO of ${tool.name} on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="combined_pmo_example.json"/>
+            <conditional name="extract_mode">
+                <param name="subcommand" value="extract_pmo_with_select_specimen_names"/>
+                <conditional name="specimen_names_source">
+                    <param name="specimen_names_source_selector" value="text"/>
+                    <param name="specimen_names" value="8025874217"/>
+                </conditional>
+            </conditional>
+            <output name="output_pmo">
+                <assert_contents>
+                    <has_text text="pmo_header"/>
+                    <has_text text="8025874217"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="extract_mode">
+                <param name="subcommand" value="extract_pmo_with_read_filter"/>
+                <param name="read_count_minimum" value="10"/>
+            </conditional>
+            <output name="output_pmo">
+                <assert_contents>
+                    <has_text text="pmo_header"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+@HELP_PREAMBLE@
+
+**Extract from PMO**
+
+Extracts a subset of a PMO file based on one of the following criteria:
+
+- **By selected metadata**: Extract samples and haplotypes matching selected metadata field values. The metadata field values can be provided as a command-line string (format: ``field1=value1,value2:field2=value1``) or as a tabular file with columns ``field``, ``values`` (and optionally ``group``).
+- **By specimen names**: Extract specific specimens by name. Names can be comma-separated or provided as a text file (one per line).
+- **By library sample names**: Extract specific library samples by name. Names can be comma-separated or provided as a text file (one per line).
+- **By target names**: Extract specific targets by name. Names can be comma-separated or provided as a text file (one per line).
+- **By read count filter**: Keep only haplotypes with read counts at or above a specified minimum.
+
+**Input**
+
+- A PMO JSON file (optionally gzipped)
+
+**Output**
+
+- A subset PMO JSON file
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

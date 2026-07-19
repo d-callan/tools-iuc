@@ -1,0 +1,133 @@
+<tool id="pmotools_export_table" name="pmotools export_table" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Export PMO metadata sections as tabular tables</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python $export_mode.subcommand
+  --file '$input_pmo'
+  --output '$output_table'
+  @OVERWRITE@
+  --delim '$export_mode.delim'
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+        <conditional name="export_mode">
+            <param name="subcommand" type="select" label="Metadata table to export">
+                <option value="export_specimen_meta_table" selected="true">Specimen metadata table</option>
+                <option value="export_library_sample_meta_table">Library sample metadata table</option>
+                <option value="export_project_info_meta_table">Project info metadata table</option>
+                <option value="export_sequencing_info_meta_table">Sequencing info metadata table</option>
+                <option value="export_specimen_travel_meta_table">Specimen travel metadata table</option>
+                <option value="export_targeted_genomes_meta_table">Targeted genomes metadata table</option>
+                <option value="export_target_info_meta_table">Target info metadata table</option>
+                <option value="export_panel_info_meta_table">Panel info metadata table</option>
+                <option value="export_bioinformatics_run_info_meta_table">Bioinformatics run info metadata table</option>
+                <option value="export_bioinformatics_methods_info_meta_table">Bioinformatics methods info metadata table</option>
+            </param>
+            <when value="export_specimen_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_library_sample_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_project_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_sequencing_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_specimen_travel_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_targeted_genomes_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_target_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_panel_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_bioinformatics_run_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_bioinformatics_methods_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output_table" format="tabular" label="${export_mode.subcommand} of ${tool.name} on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="export_mode">
+                <param name="subcommand" value="export_specimen_meta_table"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output_table">
+                <assert_contents>
+                    <has_text text="specimen_name"/>
+                    <has_text text="8025874217"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="export_mode">
+                <param name="subcommand" value="export_target_info_meta_table"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output_table">
+                <assert_contents>
+                    <has_text text="target_name"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="export_mode">
+                <param name="subcommand" value="export_sequencing_info_meta_table"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output_table">
+                <assert_contents>
+                    <has_text text="sequencing_info_name"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+@HELP_PREAMBLE@
+
+**Export PMO Metadata Tables**
+
+Exports a specific metadata section from a PMO file as a tabular (TSV or CSV) table. The following sections are available:
+
+- **Specimen metadata**: Specimen collection and identification information
+- **Library sample metadata**: Library sample preparation information
+- **Project info metadata**: Project-level information
+- **Sequencing info metadata**: Sequencing run and platform information
+- **Specimen travel metadata**: Specimen travel history information
+- **Targeted genomes metadata**: Targeted genome reference information
+- **Target info metadata**: Target/amplicon design information
+- **Panel info metadata**: Panel design and reaction information
+- **Bioinformatics run info metadata**: Bioinformatics run information
+- **Bioinformatics methods info metadata**: Bioinformatics methods and pipeline information
+
+**Input**
+
+- A PMO JSON file (optionally gzipped)
+
+**Output**
+
+- A tabular file with the selected metadata section
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

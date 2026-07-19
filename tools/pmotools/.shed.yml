@@ -1,0 +1,24 @@
+---
+categories:
+- Genomics
+- Sequence Analysis
+description: Toolkit for working with Portable Microhaplotype Object (PMO) files
+homepage_url: https://plasmogenepi.github.io/PMO_Docs/
+long_description: |
+  pmotools-python is a toolkit for creating, validating, manipulating, and converting
+  Portable Microhaplotype Object (PMO) files — a JSON-based standard for storing
+  phased targeted sequencing (microhaplotype) data with associated metadata.
+  This suite provides Galaxy wrappers for the pmotools-python command-line tools,
+  organized into functional groups: validation, combination, extraction, info
+  extraction, table export, and format conversion.
+name: pmotools
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/pmotools
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for pmotools-python {{ tool_name }}."
+suite:
+  name: "suite_pmotools"
+  description: "A suite of Galaxy tools for working with Portable Microhaplotype Object (PMO) files."
+  type: repository_suite_definition

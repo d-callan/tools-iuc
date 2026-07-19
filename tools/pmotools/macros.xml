@@ -1,0 +1,71 @@
+<macros>
+    <token name="@TOOL_VERSION@">1.1.0</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">pmotools</xref>
+        </xrefs>
+    </xml>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">pmotools</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>pmotools-python --version</version_command>
+    </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="Error:"/>
+            <regex match="Exception:"/>
+            <regex match="Traceback"/>
+        </stdio>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.64898/2025.12.10.693568</citation>
+        </citations>
+    </xml>
+    <!-- Reusable input macro for single PMO file -->
+    <xml name="input_pmo">
+        <param name="input_pmo" type="data" format="json" label="PMO file" help="Portable Microhaplotype Object JSON file"/>
+    </xml>
+    <!-- Reusable delimiter select -->
+    <xml name="delim_select">
+        <param name="delim" type="select" label="Delimiter">
+            <option value="tab" selected="true">Tab</option>
+            <option value="comma">Comma</option>
+        </param>
+    </xml>
+    <!-- Reusable overwrite flag (always on in Galaxy) -->
+    <token name="@OVERWRITE@">--overwrite</token>
+    <!-- Common help preamble -->
+    <token name="@HELP_PREAMBLE@"><![CDATA[
+**What it does**
+
+pmotools-python is a toolkit for working with Portable Microhaplotype
+Object (PMO) files. PMO is a JSON-based standard for storing phased
+targeted sequencing (microhaplotype) data and associated metadata,
+enabling interoperable analysis, data sharing, and reproducible
+workflows.
+
+This tool family provides Galaxy wrappers for the pmotools-python
+command-line suite, organized into functional groups:
+
+- **Validate**: Validate PMO files against the JSON schema
+- **Combine**: Merge multiple PMOs from the same amplicon panel
+- **Extract**: Subset PMOs by metadata, specimen names, library samples, targets, or read count filters
+- **Info**: List and count specimens, samples, targets, and metadata
+- **Export**: Convert PMO contents to tabular, XLSX, or FASTA formats
+- **Convert**: Convert text/Excel tables into PMO-compatible JSON
+
+Documentation:
+
+- PMO format docs: https://plasmogenepi.github.io/PMO_Docs/
+- CLI manual: https://plasmogenepi.github.io/pmotools-python/index.html
+  ]]></token>
+</macros>

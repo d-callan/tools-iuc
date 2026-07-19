@@ -1,0 +1,49 @@
+<tool id="pmotools_combine_pmos" name="pmotools combine_pmos" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Combine multiple PMO files from the same panel into one</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+#set $pmo_files_str = ','.join([str($pmo) for $pmo in $input_pmos])
+pmotools-python combine_pmos
+  --pmo_files '$pmo_files_str'
+  --output '$output_pmo'
+  @OVERWRITE@
+    ]]></command>
+    <inputs>
+        <param name="input_pmos" type="data" format="json" multiple="true" min="2" label="PMO files to combine" help="Select two or more PMO files from the same amplicon panel"/>
+    </inputs>
+    <outputs>
+        <data name="output_pmo" format="json" label="Combined PMO of ${tool.name} on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmos" ftype="json" value="minimum_pmo_example.json,minimum_pmo_example_2.json"/>
+            <output name="output_pmo">
+                <assert_contents>
+                    <has_text text="pmo_header"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+@HELP_PREAMBLE@
+
+**Combine PMOs**
+
+Combines multiple PMO files from the same amplicon panel into a single PMO file. All input PMOs must be from the same panel.
+
+**Input**
+
+- Two or more PMO JSON files (optionally gzipped) from the same amplicon panel
+
+**Output**
+
+- A single combined PMO JSON file
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

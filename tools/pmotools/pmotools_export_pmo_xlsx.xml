@@ -1,0 +1,48 @@
+<tool id="pmotools_export_pmo_xlsx" name="pmotools export_pmo_into_xlsx" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Export all PMO sections into an Excel workbook</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python export_pmo_into_xlsx
+  --pmo '$input_pmo'
+  --output '$output_xlsx'
+  @OVERWRITE@
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+    </inputs>
+    <outputs>
+        <data name="output_xlsx" format="xlsx" label="XLSX workbook of ${tool.name} on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <output name="output_xlsx">
+                <assert_contents>
+                    <has_size value="5000" delta="5000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+@HELP_PREAMBLE@
+
+**Export PMO to XLSX**
+
+Exports all sections of a PMO file into a multi-sheet Excel (.xlsx) workbook. Each PMO section (specimen_info, sequencing_info, target_info, panel_info, microhaplotypes_detected, etc.) is written to a separate worksheet.
+
+**Input**
+
+- A PMO JSON file (optionally gzipped)
+
+**Output**
+
+- An Excel (.xlsx) workbook containing all PMO sections
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

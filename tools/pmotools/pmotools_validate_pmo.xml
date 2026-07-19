@@ -1,0 +1,85 @@
+<tool id="pmotools_validate_pmo" name="pmotools validate_pmo" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Validate a PMO file against the JSON schema</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python validate_pmo
+  --pmo '$input_pmo'
+#if str($jsonschema_source.jsonschema_source_selector) == "version":
+  --jsonschema_version '$jsonschema_source.jsonschema_version'
+#elif str($jsonschema_source.jsonschema_source_selector) == "file":
+  --jsonschema_file '$jsonschema_source.jsonschema_file'
+#end if
+&& echo "PMO is valid" > '$output_log'
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+        <conditional name="jsonschema_source">
+            <param name="jsonschema_source_selector" type="select" label="JSON schema source">
+                <option value="version" selected="true">Use a built-in schema version</option>
+                <option value="file">Provide a custom schema file</option>
+            </param>
+            <when value="version">
+                <param name="jsonschema_version" type="select" label="Schema version" help="Version of the JSON schema to validate against">
+                    <option value="1.1.0" selected="true">1.1.0</option>
+                    <option value="1.0.0">1.0.0</option>
+                </param>
+            </when>
+            <when value="file">
+                <param name="jsonschema_file" type="data" format="json" label="Custom JSON schema file" help="Explicit JSON schema file to validate against (overrides version)"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output_log" format="txt" label="Validation log of ${tool.name} on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="jsonschema_source">
+                <param name="jsonschema_source_selector" value="version"/>
+                <param name="jsonschema_version" value="1.1.0"/>
+            </conditional>
+            <output name="output_log">
+                <assert_contents>
+                    <has_text text="PMO is valid"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example_bad_format.json"/>
+            <conditional name="jsonschema_source">
+                <param name="jsonschema_source_selector" value="version"/>
+                <param name="jsonschema_version" value="1.1.0"/>
+            </conditional>
+            <assert_exit_code value="1"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+@HELP_PREAMBLE@
+
+**Validate PMO**
+
+Validates a Portable Microhaplotype Object (PMO) JSON file against the official PMO JSON schema. The tool will report whether the file conforms to the schema and identify any validation errors.
+
+**Input**
+
+- A PMO JSON file (optionally gzipped)
+
+**Options**
+
+- **Schema source**: Choose between a built-in schema version (1.1.0 or 1.0.0) or provide a custom JSON schema file.
+- **Schema version**: The version of the PMO JSON schema to validate against (default: 1.1.0).
+
+**Output**
+
+- If validation succeeds, a log file confirming the PMO is valid is produced.
+- If validation fails, the tool exits with a non-zero exit code and reports the validation errors in stderr.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

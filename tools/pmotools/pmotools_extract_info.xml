@@ -1,0 +1,122 @@
+<tool id="pmotools_extract_info" name="pmotools extract_info" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>List and count specimens, samples, targets, and metadata from a PMO</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python $info_mode.subcommand
+  --file '$input_pmo'
+  --output '$output_table'
+  @OVERWRITE@
+#if $info_mode.subcommand in ("list_library_sample_names_per_specimen_name", "list_specimen_meta_fields", "count_specimen_meta", "count_targets_per_library_sample", "count_library_samples_per_target"):
+  --delim '$info_mode.delim'
+#end if
+#if $info_mode.subcommand == "count_specimen_meta":
+  --meta_fields '$info_mode.meta_fields'
+#end if
+#if $info_mode.subcommand in ("count_targets_per_library_sample", "count_library_samples_per_target"):
+  --read_count_minimum $info_mode.read_count_minimum
+#end if
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+        <conditional name="info_mode">
+            <param name="subcommand" type="select" label="Info extraction mode">
+                <option value="list_library_sample_names_per_specimen_name" selected="true">List library sample names per specimen name</option>
+                <option value="list_specimen_meta_fields">List specimen metadata fields</option>
+                <option value="list_bioinformatics_run_names">List bioinformatics run names</option>
+                <option value="count_specimen_meta">Count specimen metadata values</option>
+                <option value="count_targets_per_library_sample">Count targets per library sample</option>
+                <option value="count_library_samples_per_target">Count library samples per target</option>
+            </param>
+            <when value="list_library_sample_names_per_specimen_name">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="list_specimen_meta_fields">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="list_bioinformatics_run_names"/>
+            <when value="count_specimen_meta">
+                <expand macro="delim_select"/>
+                <param name="meta_fields" type="text" label="Metadata fields to count" help="Comma-separated field names, e.g. collection_country,collection_date"/>
+            </when>
+            <when value="count_targets_per_library_sample">
+                <expand macro="delim_select"/>
+                <param name="read_count_minimum" type="float" value="0" label="Minimum read count" help="The minimum read count (inclusive) to be counted as covered by sample"/>
+            </when>
+            <when value="count_library_samples_per_target">
+                <expand macro="delim_select"/>
+                <param name="read_count_minimum" type="float" value="0" label="Minimum read count" help="The minimum read count (inclusive) to be counted as covered by sample"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output_table" format="tabular" label="Info table of ${tool.name} on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="info_mode">
+                <param name="subcommand" value="count_targets_per_library_sample"/>
+                <param name="delim" value="tab"/>
+                <param name="read_count_minimum" value="0"/>
+            </conditional>
+            <output name="output_table">
+                <assert_contents>
+                    <has_text text="bioinformatics_run_id"/>
+                    <has_text text="target_name"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="info_mode">
+                <param name="subcommand" value="list_bioinformatics_run_names"/>
+            </conditional>
+            <output name="output_table">
+                <assert_contents>
+                    <has_text text="Mozambique2018"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="info_mode">
+                <param name="subcommand" value="list_specimen_meta_fields"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output_table">
+                <assert_contents>
+                    <has_text text="specimen_name"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+@HELP_PREAMBLE@
+
+**Extract Basic Info from PMO**
+
+Extracts basic information from a PMO file in tabular format:
+
+- **List library sample names per specimen name**: Lists all library sample names associated with each specimen name.
+- **List specimen metadata fields**: Lists all metadata field names found in the specimen_info section.
+- **List bioinformatics run names**: Lists all bioinformatics run names in the PMO.
+- **Count specimen metadata values**: Counts the values of selected specimen metadata fields (e.g. collection_country, collection_date).
+- **Count targets per library sample**: Counts the number of targets detected per library sample, optionally filtered by a minimum read count.
+- **Count library samples per target**: Counts the number of library samples per target, optionally filtered by a minimum read count.
+
+**Input**
+
+- A PMO JSON file (optionally gzipped)
+
+**Output**
+
+- A tabular file with the requested information
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
