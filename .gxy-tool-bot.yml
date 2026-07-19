@@ -9,7 +9,9 @@ api:
 exemplars:
   - url: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/bcftools/bcftools_view.xml
     macros: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/bcftools/macros.xml
+    shed_yml: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/bcftools/.shed.yml
   - url: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/seqtk_seq.xml
     macros: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/macros.xml
+    shed_yml: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/.shed.yml
 
 repo: d-callan/tools-iuc
