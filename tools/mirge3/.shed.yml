@@ -1,0 +1,17 @@
+---
+name: mirge3
+owner: iuc
+description: "Comprehensive small RNA-seq analysis pipeline (miRge3.0)"
+long_description: |
+  miRge3.0 is a comprehensive Python pipeline for small RNA-seq data analysis.
+  It performs adapter trimming, read collapsing, alignment to small-RNA annotation
+  libraries, known miRNA quantification, isomiR analysis, A-to-I RNA editing
+  detection, tRNA fragment (tRF) analysis, novel miRNA prediction, UMI
+  processing/deduplication, optional differential expression (DESeq2), and
+  produces interactive HTML reports.
+categories:
+- RNA
+- Transcriptomics
+homepage_url: https://mirge3.readthedocs.io/
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/mirge3
+type: unrestricted

@@ -1,0 +1,8 @@
+# miRge3.0 organism libraries
+# This file is used by the mirge3_libraries data table.
+# Format: value<TAB>dbkey<TAB>organism<TAB>path
+#
+# Example entries (paths point to pre-downloaded library directories):
+# nematode	nematode	nematode	/data/mirge3_libraries/nematode
+# human	hg38	human	/data/mirge3_libraries/human
+# mouse	mm10	mouse	/data/mirge3_libraries/mouse

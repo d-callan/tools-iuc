@@ -1,0 +1,3 @@
+# miRge3.0 organism libraries for testing
+# Format: value<TAB>dbkey<TAB>organism<TAB>path
+nematode	nematode	nematode	/data/mirge3_libraries/nematode

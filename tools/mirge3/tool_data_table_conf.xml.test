@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<tables>
+    <table name="mirge3_libraries" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, dbkey, organism, path</columns>
+        <file path="tool-data/mirge3_libraries.loc" />
+    </table>
+</tables>
