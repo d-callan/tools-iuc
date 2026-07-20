@@ -1,0 +1,68 @@
+<tool id="mumemto_viz" name="mumemto viz" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Visualize pangenome synteny from multi-MUM output</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="viz_requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+mumemto viz
+-m '$mum_file'
+-o 'viz_output'
+#if $interactive:
+  --interactive
+#end if
+&& cp viz_output.png '$plot_output'
+#if $interactive:
+  && cp viz_output.html '$interactive_output'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="mum_file" type="data" format="txt" label="Input .mums file" help="Multi-MUM output from mumemto find (strict or partial multi-MUMs only)"/>
+        <param argument="--interactive" name="interactive" type="boolean" truevalue="--interactive" falsevalue="" checked="false" label="Generate interactive plotly plot" help="Experimental: produces an HTML interactive plot in addition to the static PNG"/>
+    </inputs>
+    <outputs>
+        <data name="plot_output" format="png" label="${tool.name} on ${on_string}: synteny plot"/>
+        <data name="interactive_output" format="html" label="${tool.name} on ${on_string}: interactive plot">
+            <filter>interactive</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="mum_file" value="test1.mums" ftype="txt"/>
+            <output name="plot_output" ftype="png">
+                <assert_contents>
+                    <has_size value="100" delta="100000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# Mumemto: Visualization
+
+Mumemto viz generates synteny visualization plots from `.mums` output files
+produced by mumemto find. It requires strict or partial multi-MUMs as input
+(not multi-MEMs).
+
+## Input
+
+- A `.mums` file from a mumemto find run (strict or partial multi-MUMs only).
+
+## Options
+
+- **Interactive plot:** Generate an experimental interactive plotly plot (HTML)
+  in addition to the static PNG image.
+
+## Output
+
+- A PNG synteny visualization plot.
+- Optionally, an HTML interactive plotly plot.
+
+For detailed usage, see the Mumemto wiki: https://github.com/vikshiv/mumemto/wiki
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

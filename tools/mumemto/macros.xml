@@ -1,0 +1,50 @@
+<macros>
+    <token name="@TOOL_VERSION@">1.4.0</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">mumemto</xref>
+        </xrefs>
+    </xml>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">mumemto</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="viz_requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">mumemto</requirement>
+            <requirement type="package" version="3.9.1">matplotlib</requirement>
+            <requirement type="package" version="2.0.0">plotly</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>mumemto -h 2&gt;&amp;1 | head -1</version_command>
+    </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="Error:"/>
+            <regex match="Exception:"/>
+        </stdio>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1186/s13059-025-03644-0</citation>
+            <yield/>
+        </citations>
+    </xml>
+    <xml name="input_fastas">
+        <param name="input_fastas" type="data" format="fasta,fasta.gz" multiple="true" label="Input FASTA file(s)" help="One or more FASTA files, one per genome/assembly"/>
+    </xml>
+    <token name="@ATTRIBUTION@"><![CDATA[
+**Attribution**
+
+This Galaxy tool relies on the mumemto toolkit from `vikshiv/mumemto
+<https://github.com/vikshiv/mumemto>`_, developed by Vikram S. Shivakumar and Ben Langmead.
+    ]]></token>
+</macros>

@@ -1,0 +1,174 @@
+<tool id="mumemto_find" name="mumemto find" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Find maximal unique matches (multi-MUMs) and maximal exact matches (multi-MEMs) across pangenome sequences</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Symlink input FASTA files to local names
+#set $fasta_files = []
+#for $i, $fasta in enumerate($input_fastas):
+  #set $fa_name = 'input_' + str($i) + '.fa'
+  #if $fasta.is_of_type('fasta.gz')
+    ln -s '$fasta' input_${i}.fa.gz &&
+    gunzip -c input_${i}.fa.gz > $fa_name &&
+  #else
+    ln -s '$fasta' $fa_name &&
+  #end if
+  $fasta_files.append($fa_name)
+#end for
+
+mumemto
+-o 'output'
+#if str($adv.min_sequences):
+  -k $adv.min_sequences
+#end if
+-f $adv.max_per_sequence
+#if str($adv.max_total):
+  -F $adv.max_total
+#end if
+#if $adv.binary_output:
+  -b
+#end if
+#if $adv.merge_mode == 'string':
+  -M
+#elif $adv.merge_mode == 'anchor':
+  -Mn
+#end if
+-t \${GALAXY_SLOTS:-4}
+#for $fa in $fasta_files:
+  '$fa'
+#end for
+
+## Rename outputs to Galaxy-friendly names
+#if $adv.binary_output:
+  && cp output.bumbl '$bumbl_output'
+#else:
+  && cp output.mums '$mums_output'
+#end if
+&& cp output.lengths '$lengths_output'
+#if $adv.merge_mode == 'string':
+  && cp output.thresh '$thresh_output'
+  && cp output.thresh_rev '$thresh_rev_output'
+#elif $adv.merge_mode == 'anchor':
+  && cp output.athresh '$athresh_output'
+#end if
+    ]]></command>
+    <inputs>
+        <expand macro="input_fastas"/>
+        <section name="adv" title="Advanced Options" expanded="false">
+            <param argument="-k" name="min_sequences" type="integer" optional="true" label="Minimum number of sequences a match must occur in" help="Positive = absolute number; negative = relative to N (e.g., -1 = all but one)"/>
+            <param argument="-f" name="max_per_sequence" type="integer" value="1" min="1" label="Maximum occurrences per sequence" help="1 = MUMs (default); &gt;1 = MEMs (allows duplicated regions)"/>
+            <param argument="-F" name="max_total" type="integer" optional="true" label="Maximum total occurrences in the collection" help="Negative = relative to N"/>
+            <param argument="-b" name="binary_output" type="boolean" truevalue="-b" falsevalue="" checked="false" label="Output binary .bumbl format" help="Binary format for faster I/O"/>
+            <param name="merge_mode" type="select" label="Merge mode" help="Enable string-based or anchor-based merging (generates threshold files)">
+                <option value="none" selected="true">No merging</option>
+                <option value="string">String-based merging (-M)</option>
+                <option value="anchor">Anchor-based merging (-Mn)</option>
+            </param>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="mums_output" format="txt" label="${tool.name} on ${on_string}: matches">
+            <filter>not adv["binary_output"]</filter>
+        </data>
+        <data name="bumbl_output" format="binary" label="${tool.name} on ${on_string}: binary matches">
+            <filter>adv["binary_output"]</filter>
+        </data>
+        <data name="lengths_output" format="tabular" label="${tool.name} on ${on_string}: sequence lengths"/>
+        <data name="thresh_output" format="txt" label="${tool.name} on ${on_string}: merge thresholds">
+            <filter>adv["merge_mode"] == "string"</filter>
+        </data>
+        <data name="thresh_rev_output" format="txt" label="${tool.name} on ${on_string}: reverse merge thresholds">
+            <filter>adv["merge_mode"] == "string"</filter>
+        </data>
+        <data name="athresh_output" format="txt" label="${tool.name} on ${on_string}: anchor merge thresholds">
+            <filter>adv["merge_mode"] == "anchor"</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="input_fastas" value="genome1.fa,genome2.fa,genome3.fa" ftype="fasta"/>
+            <output name="mums_output" file="test1.mums" ftype="txt"/>
+            <output name="lengths_output" file="test1.lengths" ftype="tabular"/>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="input_fastas" value="genome1.fa,genome2.fa,genome3.fa" ftype="fasta"/>
+            <section name="adv">
+                <param name="min_sequences" value="-1"/>
+            </section>
+            <output name="mums_output" file="test2.mums" ftype="txt"/>
+            <output name="lengths_output" file="test2.lengths" ftype="tabular"/>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="input_fastas" value="genome1.fa,genome2.fa,genome3.fa" ftype="fasta"/>
+            <section name="adv">
+                <param name="max_per_sequence" value="3"/>
+            </section>
+            <output name="mums_output" file="test3.mems" ftype="txt"/>
+            <output name="lengths_output" file="test3.lengths" ftype="tabular"/>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="input_fastas" value="genome1.fa,genome2.fa,genome3.fa" ftype="fasta"/>
+            <section name="adv">
+                <param name="binary_output" value="true"/>
+            </section>
+            <output name="bumbl_output" ftype="binary">
+                <assert_contents>
+                    <has_size value="1" delta="1000"/>
+                </assert_contents>
+            </output>
+            <output name="lengths_output" file="test4.lengths" ftype="tabular"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# Mumemto: Find multi-MUMs and multi-MEMs
+
+Mumemto finds maximal unique matches (multi-MUMs) and maximal exact matches
+(multi-MEMs) across a collection of pangenome sequences. It uses the prefix-free
+parse (PFP) algorithm for efficient suffix array construction on large, repetitive
+text collections.
+
+## Finding multi-MUMs/MEMs
+
+Provide one or more FASTA files (one per genome/assembly). By default, strict
+multi-MUMs are computed (match appears exactly once in every sequence).
+
+Use the parameters to control match properties:
+
+- **Min sequences (-k):** Minimum number of sequences a match must occur in.
+  Negative values are relative to N (e.g., -1 = all but one).
+- **Max per sequence (-f):** Maximum occurrences per sequence. Default 1 (MUMs).
+  Values >1 find multi-MEMs (e.g., duplicated regions).
+- **Max total (-F):** Maximum total occurrences in the collection. Useful for
+  filtering low-complexity matches.
+
+## Output formats
+
+- `*.mums`: One line per MUM with length, comma-delimited offsets, and strand indicators.
+- `*.mems`: One line per MEM with length, offsets, sequence IDs, and strand indicators.
+- `*.bumbl`: Binary format for faster I/O (use -b flag).
+- `*.lengths`: Sequence lengths and filelist.
+
+## Merging
+
+- **String-based merging (-M):** Generates threshold files for string-based merge.
+- **Anchor-based merging (-Mn):** Generates anchor-based merge threshold files.
+
+## Visualization
+
+Use the mumemto viz tool to generate synteny plots from `.mums` output.
+
+## Merging partitions
+
+Use the mumemto merge tool to combine multi-MUMs from partitioned runs.
+
+For detailed usage, see the Mumemto wiki: https://github.com/vikshiv/mumemto/wiki
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

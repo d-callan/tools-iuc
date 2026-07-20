@@ -1,0 +1,62 @@
+<tool id="mumemto_merge" name="mumemto merge" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Merge multi-MUMs from multiple partitioned runs</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Symlink input .mums files to local names
+#set $mum_files_local = []
+#for $i, $mum in enumerate($mum_files):
+  #set $mum_name = 'input_' + str($i) + '.mums'
+  ln -s '$mum' $mum_name &&
+  $mum_files_local.append($mum_name)
+#end for
+
+mumemto merge
+#for $mum in $mum_files_local:
+  '$mum'
+#end for
+-o 'merged.mums'
+&& cp merged.mums '$merged_mums'
+    ]]></command>
+    <inputs>
+        <param name="mum_files" type="data" format="txt" multiple="true" label="Input .mums files" help="Two or more .mums files from separate mumemto find runs to merge"/>
+    </inputs>
+    <outputs>
+        <data name="merged_mums" format="txt" label="${tool.name} on ${on_string}: merged multi-MUMs"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="mum_files" value="merge_a.mums,merge_b.mums" ftype="txt"/>
+            <output name="merged_mums" file="merged.mums" ftype="txt"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# Mumemto: Merge multi-MUMs
+
+Mumemto merge combines multi-MUMs from multiple partitioned runs into a single
+`.mums` file. It auto-detects whether string-based or anchor-based merging
+should be used.
+
+## Input
+
+- Two or more `.mums` files from separate mumemto find runs.
+
+## Limitations
+
+Merging is currently limited to strict multi-MUMs.
+
+## Output
+
+- A merged `.mums` file containing the combined multi-MUMs.
+
+For detailed usage, see the Mumemto wiki: https://github.com/vikshiv/mumemto/wiki
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
