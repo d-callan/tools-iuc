@@ -1,0 +1,147 @@
+<tool id="genefior_gene_stats" name="GeneFior Gene Stats" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Generate gene-level coverage visualisations and read exports</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Reconstruct a results directory from the provided TSV files
+mkdir -p input_results/raw_outputs &&
+cp '$detection_matrix' input_results/raw_outputs/detection_matrix.tsv &&
+#if $evidence_matrix:
+  cp '$evidence_matrix' input_results/raw_outputs/evidence_matrix.tsv &&
+#end if
+#if $evidence_summary:
+  cp '$evidence_summary' input_results/raw_outputs/evidence_summary.tsv &&
+#end if
+#if $allele_resolution:
+  cp '$allele_resolution' input_results/raw_outputs/allele_resolution.tsv &&
+#end if
+#if $ref_fasta:
+  cp '$ref_fasta' input_results/raw_outputs/ref.fasta &&
+#end if
+#if $query_fasta:
+  cp '$query_fasta' input_results/raw_outputs/query.fasta &&
+#end if
+mkdir -p output_dir &&
+GeneFior-gene-stats
+  -i input_results
+  -o output_dir
+  #if $genes:
+    -g '$genes'
+  #end if
+  #if $all_genes:
+    --all-genes
+  #end if
+  #if str($gene_selection) != 'None':
+    --gene-selection '$gene_selection'
+  #end if
+  #if $databases:
+    --databases #echo ' '.join($databases)#
+  #end if
+  #if $tools:
+    --tools #echo ' '.join($tools)#
+  #end if
+  #if $ref_fasta:
+    --ref-fasta input_results/raw_outputs/ref.fasta
+  #end if
+  #if $query_fasta:
+    --query-fasta input_results/raw_outputs/query.fasta
+  #end if
+  #if $plot_per_tool:
+    --plot-per-tool
+  #end if
+  #if $report_read_names:
+    --report-read-names
+  #end if
+  #if $report_fasta:
+    --report-fasta
+  #end if
+  #if str($read_selection) != 'None':
+    --read-selection '$read_selection'
+  #end if
+&& cd output_dir
+&& find . -name '*.png' | head -1 | xargs -I{} cp {} ../plot.png || true
+&& find . -name '*_read_names.txt' | head -1 | xargs -I{} cp {} ../read_names.txt 2>/dev/null || true
+&& find . -name '*_reads.fasta' | head -1 | xargs -I{} cp {} ../read_fasta.fasta 2>/dev/null || true
+&& cd .. && zip -r results_archive.zip output_dir
+    ]]></command>
+    <inputs>
+        <param name="detection_matrix" type="data" format="tabular" label="Detection matrix from prior run" help="The *_detection_matrix.tsv file from a GeneFíor or AMRfior run"/>
+        <param name="evidence_matrix" type="data" format="tabular" optional="true" label="Evidence matrix from prior run" help="The *_evidence_matrix.tsv file"/>
+        <param name="evidence_summary" type="data" format="tabular" optional="true" label="Evidence summary from prior run" help="The *_evidence_summary.tsv file"/>
+        <param name="allele_resolution" type="data" format="tabular" optional="true" label="Allele resolution from prior run" help="The *_allele_resolution.tsv file"/>
+        <param name="genes" type="text" optional="true" label="Gene names" help="Comma-separated gene names or path to a file with gene names"/>
+        <param name="all_genes" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Include all genes" help="Generate stats for all genes in the results"/>
+        <param name="gene_selection" type="select" optional="true" label="Gene selection" help="Filter genes by evidence level">
+            <option value="evidence">evidence</option>
+            <option value="candidate">candidate</option>
+            <option value="exact">exact</option>
+            <option value="candidate-or-exact">candidate-or-exact</option>
+            <option value="all">all</option>
+        </param>
+        <param name="databases" type="select" multiple="true" optional="true" label="Databases" help="Filter by database">
+            <option value="resfinder">resfinder</option>
+            <option value="card">card</option>
+            <option value="ncbi">ncbi</option>
+        </param>
+        <expand macro="tools_select"/>
+        <param name="ref_fasta" type="data" format="fasta,fasta.gz" optional="true" label="Reference FASTA" help="Reference sequences for plotting"/>
+        <param name="query_fasta" type="data" format="fasta,fasta.gz" optional="true" label="Query FASTA" help="Original query sequences for FASTA export"/>
+        <param name="plot_per_tool" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Plot per tool" help="Generate separate plots for each tool"/>
+        <param name="report_read_names" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Report read names" help="Export deduplicated read-name files"/>
+        <param name="report_fasta" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Report FASTA" help="Export deduplicated read FASTA files"/>
+        <param name="read_selection" type="select" optional="true" label="Read selection" help="Which reads to export">
+            <option value="all">all</option>
+            <option value="passing">passing</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="plot" format="png" label="${tool.name} on ${on_string}: Coverage plot"/>
+        <data name="read_names" format="txt" label="${tool.name} on ${on_string}: Read names">
+            <filter>report_read_names</filter>
+        </data>
+        <data name="read_fasta" format="fasta" label="${tool.name} on ${on_string}: Read FASTA">
+            <filter>report_fasta</filter>
+        </data>
+        <data name="results_archive" format="zip" label="${tool.name} on ${on_string}: Results archive"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="detection_matrix" ftype="tabular" value="test_detection_matrix.tsv"/>
+            <param name="evidence_matrix" ftype="tabular" value="test_evidence_matrix.tsv"/>
+            <param name="evidence_summary" ftype="tabular" value="test_evidence_summary.tsv"/>
+            <param name="allele_resolution" ftype="tabular" value="test_allele_resolution.tsv"/>
+            <param name="all_genes" value="true"/>
+            <param name="gene_selection" value="all"/>
+            <param name="plot_per_tool" value="false"/>
+            <param name="report_read_names" value="false"/>
+            <param name="report_fasta" value="false"/>
+            <output name="plot">
+                <assert_contents>
+                    <has_text text="\x89PNG"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**Gene Stats**
+
+GeneFior-Gene-Stats generates gene-level coverage visualisations and read
+exports from prior GeneFíor or AMRfior results. It produces PNG plots showing
+per-base coverage across detected genes, and can optionally export deduplicated
+read names and read sequences.
+
+Provide the detection matrix (and optionally the evidence matrix, evidence
+summary, and allele resolution) from a previous run, optionally specify gene
+names or selection criteria, and the tool will generate plots and read exports.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

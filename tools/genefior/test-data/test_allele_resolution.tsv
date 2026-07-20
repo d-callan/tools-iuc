@@ -1,0 +1,4 @@
+Gene	Tool	Database	Allele	Allele_Identity_pct	Allele_Coverage_pct	Resolving_Reads
+ref_gene_1	diamond	user_db	ref_gene_1	100.0	100.0	5
+ref_gene_2	diamond	user_db	ref_gene_2	100.0	100.0	3
+ref_gene_3	diamond	user_db	ref_gene_3	100.0	100.0	2

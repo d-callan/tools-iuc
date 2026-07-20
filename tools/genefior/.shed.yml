@@ -1,0 +1,22 @@
+categories:
+- Sequence Analysis
+- Genomics
+description: GeneFíor multi-tool gene detection toolkit
+homepage_url: https://github.com/NickJD/GeneFior
+long_description: |
+  GeneFíor is a multi-tool gene detection toolkit that orchestrates BLAST, BWA,
+  Bowtie2, DIAMOND, Minimap2, and MMseqs2 to search DNA and protein sequences
+  against reference databases (including pre-packaged CARD, ResFinder, and NCBI
+  AMR databases). It provides transparent, coverage-based validation with
+  evidence qualification and allele resolution.
+name: genefior
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/genefior
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for GeneFíor {{ tool_name }}."
+suite:
+  name: "suite_genefior"
+  description: "A suite of Galaxy tools for the GeneFíor multi-tool gene detection toolkit."
+  type: repository_suite_definition

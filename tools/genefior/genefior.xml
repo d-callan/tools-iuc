@@ -1,0 +1,172 @@
+<tool id="genefior" name="GeneFior" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Multi-tool gene detection with user-provided databases</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p output_dir &&
+GeneFior
+  -i '$input'
+  #if $sequence_type == 'Paired-FASTQ':
+    ,'$input_r2'
+  #end if
+  -st '$sequence_type'
+  --db-path '$db_path'
+  -o output_dir
+  -t \${GALAXY_SLOTS:-4}
+  #if $tools:
+    --tools #echo ' '.join($tools)#
+  #end if
+  #if str($report_fasta) != 'None':
+    --report-fasta '$report_fasta'
+  #end if
+  #if $sequence_type == 'Genes-FASTA':
+    --genes-type '$genes_type'
+  #end if
+  --q-min-cov $q_min_cov
+  --q-min-id $q_min_id
+  --d-min-cov $d_min_cov
+  --d-min-id $d_min_id
+  --d-min-depth $d_min_depth
+  --d-min-reads $d_min_reads
+  #if $mode == 'dna-only':
+    --dna-only
+  #elif $mode == 'protein-only':
+    --protein-only
+  #end if
+  #if str($sensitivity) != 'default':
+    --sensitivity '$sensitivity'
+  #end if
+  --minimap2-preset '$minimap2_preset'
+  --blastx-task '$blastx_task'
+  -e $evalue
+  #if $fastp_trim and $sequence_type == 'Paired-FASTQ':
+    --fastp-trim
+  #end if
+  #for $tp in $tool_param:
+    --tool-param '$tp.tool_name="$tp.params"'
+  #end for
+  #if $verbose:
+    --verbose
+  #end if
+&& cd output_dir
+&& find . -name '*_detection_matrix.tsv' | head -1 | xargs -I{} cp {} ../detection_matrix.tsv
+&& find . -name '*_evidence_matrix.tsv' | head -1 | xargs -I{} cp {} ../evidence_matrix.tsv
+&& find . -name '*_evidence_summary.tsv' | head -1 | xargs -I{} cp {} ../evidence_summary.tsv
+&& find . -name '*_allele_resolution.tsv' | head -1 | xargs -I{} cp {} ../allele_resolution.tsv
+#if str($report_fasta) != 'None':
+  && find . -name '*.fasta' -path '*/report*' | head -1 | xargs -I{} cp {} ../report_fasta_out.fasta || true
+#end if
+&& cd .. && zip -r results_archive.zip output_dir
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Input sequences" help="Input FASTA/FASTQ (.gz accepted). For Paired-FASTQ, provide R1 here and R2 below."/>
+        <param name="input_r2" type="data" format="fastq,fastq.gz" optional="true" label="R2 mate (Paired-FASTQ)" help="Second read file for paired-end FASTQ input"/>
+        <param name="sequence_type" type="select" label="Sequence type" help="Type of input sequences">
+            <option value="Single-FASTA">Single-FASTA</option>
+            <option value="Paired-FASTQ">Paired-FASTQ</option>
+            <option value="Genes-FASTA">Genes-FASTA</option>
+        </param>
+        <param name="db_path" type="text" label="Database path" help="Comma-separated paths to user-provided database directories"/>
+        <expand macro="tools_select"/>
+        <expand macro="report_fasta_select"/>
+        <param name="genes_type" type="select" optional="true" label="Genes type" help="Required for Genes-FASTA: specify DNA or amino acid">
+            <option value="dna">dna</option>
+            <option value="aa">aa</option>
+        </param>
+        <section name="thresholds" title="Detection thresholds" expanded="false">
+            <expand macro="threshold_params"/>
+        </section>
+        <section name="advanced" title="Advanced options" expanded="false">
+            <param name="mode" type="select" label="Tool mode" help="Restrict to DNA-only or protein-only tools">
+                <option value="all" selected="true">all</option>
+                <option value="dna-only">dna-only</option>
+                <option value="protein-only">protein-only</option>
+            </param>
+            <expand macro="sensitivity_select"/>
+            <param name="minimap2_preset" type="select" label="Minimap2 preset" help="Preset for minimap2 alignment">
+                <option value="sr" selected="true">sr</option>
+                <option value="map-ont">map-ont</option>
+                <option value="map-pb">map-pb</option>
+                <option value="map-hifi">map-hifi</option>
+            </param>
+            <param name="blastx_task" type="select" label="BLASTX task" help="Task mode for blastx">
+                <option value="blastx-fast" selected="true">blastx-fast</option>
+                <option value="blastx">blastx</option>
+            </param>
+            <param argument="-e" name="evalue" type="float" value="10" label="E-value threshold" help="E-value threshold for BLAST/DIAMOND (default: 10)"/>
+            <param name="fastp_trim" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Run fastp trimming" help="Trim reads with fastp before alignment (Paired-FASTQ only)"/>
+            <repeat name="tool_param" title="Extra tool parameters" optional="true" min="0">
+                <param name="tool_name" type="select" label="Tool name">
+                    <option value="blastn">blastn</option>
+                    <option value="blastx">blastx</option>
+                    <option value="blastp">blastp</option>
+                    <option value="diamond">diamond</option>
+                    <option value="bowtie2">bowtie2</option>
+                    <option value="bwa">bwa</option>
+                    <option value="minimap2">minimap2</option>
+                </param>
+                <param name="params" type="text" label="Parameters" help="Arguments to pass to the tool, e.g. &quot;-e 1e-5&quot;">
+                    <validator type="regex" message="No quotes or semicolons allowed">^[^"';]*$</validator>
+                </param>
+            </repeat>
+            <param name="verbose" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Verbose output"/>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="detection_matrix" format="tabular" label="${tool.name} on ${on_string}: Detection matrix"/>
+        <data name="evidence_matrix" format="tabular" label="${tool.name} on ${on_string}: Evidence matrix"/>
+        <data name="evidence_summary" format="tabular" label="${tool.name} on ${on_string}: Evidence summary"/>
+        <data name="allele_resolution" format="tabular" label="${tool.name} on ${on_string}: Allele resolution"/>
+        <data name="report_fasta_out" format="fasta" label="${tool.name} on ${on_string}: Report FASTA">
+            <filter>report_fasta is not None</filter>
+        </data>
+        <data name="results_archive" format="zip" label="${tool.name} on ${on_string}: Results archive"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="5">
+            <param name="input" ftype="fasta" value="test_input.fasta"/>
+            <param name="sequence_type" value="Single-FASTA"/>
+            <param name="db_path" value="test_db"/>
+            <param name="tools" value="diamond"/>
+            <section name="thresholds">
+                <param name="--q-min-cov" value="40.0"/>
+                <param name="--q-min-id" value="80.0"/>
+                <param name="--d-min-cov" value="80.0"/>
+                <param name="--d-min-id" value="80.0"/>
+                <param name="--d-min-depth" value="1"/>
+                <param name="--d-min-reads" value="1"/>
+            </section>
+            <section name="advanced">
+                <param name="mode" value="all"/>
+                <param name="sensitivity" value="default"/>
+                <param name="minimap2_preset" value="sr"/>
+                <param name="blastx_task" value="blastx-fast"/>
+                <param name="evalue" value="10"/>
+                <param name="fastp_trim" value="false"/>
+                <param name="verbose" value="false"/>
+            </section>
+            <output name="detection_matrix">
+                <assert_contents>
+                    <has_text text="Gene"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**Usage with user-provided databases**
+
+Provide the path to one or more pre-built database directories (comma-separated).
+Databases must be formatted for the tools you select (e.g. BLAST databases for
+blastn/blastx/blastp, DIAMOND databases for diamond, BWA indexes for bwa, etc.).
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

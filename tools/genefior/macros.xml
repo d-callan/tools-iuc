@@ -1,0 +1,115 @@
+<macros>
+    <token name="@TOOL_VERSION@">0.10.1</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">genefior</xref>
+        </xrefs>
+    </xml>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">genefior</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>GeneFior --version</version_command>
+    </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="Error:"/>
+            <regex match="Exception:"/>
+            <regex match="Traceback"/>
+        </stdio>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.64898/2026.05.15.724838</citation>
+            <yield/>
+        </citations>
+    </xml>
+    <xml name="threshold_params">
+        <param argument="--q-min-cov" type="float" value="40.0" label="Query min coverage %" help="Minimum query coverage percentage (default: 40.0)"/>
+        <param argument="--q-min-id" type="float" value="80.0" label="Query min identity %" help="Minimum query identity percentage (default: 80.0)"/>
+        <param argument="--d-min-cov" type="float" value="80.0" label="Detection min coverage %" help="Minimum detection coverage percentage (default: 80.0)"/>
+        <param argument="--d-min-id" type="float" value="80.0" label="Detection min identity %" help="Minimum detection identity percentage (default: 80.0)"/>
+        <param argument="--d-min-depth" type="integer" value="1" min="1" label="Min per-base depth" help="Minimum per-base depth (default: 1)"/>
+        <param argument="--d-min-reads" type="integer" value="1" min="1" label="Min number of reads" help="Minimum number of reads (default: 1)"/>
+    </xml>
+    <xml name="tools_select">
+        <param argument="--tools" type="select" multiple="true" label="Tools to use" help="Select which alignment tools to run (default: all except blastx/p)">
+            <option value="blastn">blastn</option>
+            <option value="blastx">blastx</option>
+            <option value="blastp">blastp</option>
+            <option value="diamond">diamond</option>
+            <option value="bowtie2">bowtie2</option>
+            <option value="bwa">bwa</option>
+            <option value="minimap2">minimap2</option>
+            <option value="all">all</option>
+        </param>
+    </xml>
+    <xml name="sensitivity_select">
+        <param argument="--sensitivity" type="select" label="Sensitivity mode" help="Sensitivity level for protein-based tools">
+            <option value="default" selected="true">default</option>
+            <option value="very-fast">very-fast</option>
+            <option value="fast">fast</option>
+            <option value="sensitive">sensitive</option>
+            <option value="more-sensitive">more-sensitive</option>
+            <option value="very-sensitive">very-sensitive</option>
+            <option value="ultra-sensitive">ultra-sensitive</option>
+        </param>
+    </xml>
+    <xml name="report_fasta_select">
+        <param argument="--report-fasta" type="select" optional="true" label="Report FASTA" help="Export sequences at the specified evidence level">
+            <option value="all">all</option>
+            <option value="detected">detected</option>
+            <option value="detected-all">detected-all</option>
+            <option value="evidence">evidence</option>
+            <option value="evidence-all">evidence-all</option>
+            <option value="candidate">candidate</option>
+            <option value="candidate-all">candidate-all</option>
+            <option value="exact">exact</option>
+            <option value="exact-all">exact-all</option>
+        </param>
+    </xml>
+    <token name="@ATTRIBUTION@"><![CDATA[
+**Attribution**
+
+GeneFíor was developed by Nicholas J. Dimonaco and Katie Lawther. See
+https://github.com/NickJD/GeneFior for source and documentation.
+    ]]></token>
+    <token name="@GENEFIOR_HELP@"><![CDATA[
+**What it does**
+
+GeneFíor is a multi-tool gene detection toolkit that searches DNA and protein
+sequences against reference databases using BLAST, BWA, Bowtie2, DIAMOND,
+Minimap2, and MMseqs2. It provides transparent, coverage-based validation with
+evidence qualification and allele resolution.
+
+**Subcommands available as separate Galaxy tools:**
+
+- **GeneFior** — General-purpose detection with user-provided databases
+- **AMRfior** — AMR-focused detection with pre-packaged CARD, ResFinder, and NCBI databases
+- **GeneFior-Recompute** — Recalculate detection statistics with different thresholds
+- **GeneFior-Gene-Stats** — Generate gene-level coverage visualisations and read exports
+- **GeneFior-Combine** — Combine per-sample detection matrices into combined matrices
+
+**Input types:**
+
+- **Single-FASTA:** A single FASTA file (contigs, reads, or assembled sequences)
+- **Paired-FASTQ:** Two FASTQ files (R1 and R2) from paired-end sequencing
+- **Genes-FASTA:** Full-length gene sequences (DNA or protein); skips read-mappers
+
+**Evidence qualification levels:**
+
+- **EXACT_ALLELE_DETECTED** — 100% identity, full-length coverage, allele-resolving support
+- **CANDIDATE_ALLELE_DETECTED** — ≥98% identity, full-length support, allele-resolving
+- **ALLELE_LIKE** — strong evidence close to named allele
+- **FAMILY_DETECTED** — gene family supported but alleles not distinguished
+- **PARTIAL_OR_DIVERGENT** — incomplete or divergent mapping
+- **NOT_DETECTED** — insufficient evidence
+    ]]></token>
+</macros>

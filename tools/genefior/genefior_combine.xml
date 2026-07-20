@@ -1,0 +1,88 @@
+<tool id="genefior_combine" name="GeneFior Combine" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Combine per-sample detection matrices into combined matrices</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Reconstruct per-sample result directories from provided detection matrices
+mkdir -p input_root/sample_1 &&
+cp '$detection_matrix_1' input_root/sample_1/sample_1_detection_matrix.tsv &&
+#if $evidence_matrix_1:
+  cp '$evidence_matrix_1' input_root/sample_1/sample_1_evidence_matrix.tsv &&
+#end if
+#if $detection_matrix_2:
+  mkdir -p input_root/sample_2 &&
+  cp '$detection_matrix_2' input_root/sample_2/sample_2_detection_matrix.tsv &&
+  #if $evidence_matrix_2:
+    cp '$evidence_matrix_2' input_root/sample_2/sample_2_evidence_matrix.tsv &&
+  #end if
+#end if
+#if $samples_file:
+  cp '$samples_file' input_root/samples.txt &&
+#end if
+GeneFior-Combine
+  -i input_root
+  #if $samples_file:
+    --samples-file input_root/samples.txt
+  #end if
+  --output output_combined
+  #if $verbose:
+    --verbose
+  #end if
+&& find output_combined -name '*_combined_detection_matrix.tsv' | head -1 | xargs -I{} cp {} ../combined_detection_matrix.tsv
+&& find output_combined -name '*_combined_detection_matrix_tools.tsv' | head -1 | xargs -I{} cp {} ../combined_detection_matrix_tools.tsv
+&& find output_combined -name '*_combined_evidence_matrix.tsv' | head -1 | xargs -I{} cp {} ../combined_evidence_matrix.tsv
+    ]]></command>
+    <inputs>
+        <param name="detection_matrix_1" type="data" format="tabular" label="Detection matrix (sample 1)" help="The *_detection_matrix.tsv file from the first sample's GeneFíor run"/>
+        <param name="evidence_matrix_1" type="data" format="tabular" optional="true" label="Evidence matrix (sample 1)" help="The *_evidence_matrix.tsv file from the first sample"/>
+        <param name="detection_matrix_2" type="data" format="tabular" optional="true" label="Detection matrix (sample 2)" help="The *_detection_matrix.tsv file from the second sample's GeneFíor run"/>
+        <param name="evidence_matrix_2" type="data" format="tabular" optional="true" label="Evidence matrix (sample 2)" help="The *_evidence_matrix.tsv file from the second sample"/>
+        <param name="samples_file" type="data" format="txt,tabular" optional="true" label="Samples file" help="File with sample folder names (one per line). If not provided, all subdirectories are used."/>
+        <param name="verbose" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Verbose output"/>
+    </inputs>
+    <outputs>
+        <data name="combined_detection_matrix" format="tabular" label="${tool.name} on ${on_string}: Combined detection matrix"/>
+        <data name="combined_detection_matrix_tools" format="tabular" label="${tool.name} on ${on_string}: Combined detection matrix (per tool)"/>
+        <data name="combined_evidence_matrix" format="tabular" label="${tool.name} on ${on_string}: Combined evidence matrix"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <param name="detection_matrix_1" ftype="tabular" value="test_detection_matrix.tsv"/>
+            <param name="evidence_matrix_1" ftype="tabular" value="test_evidence_matrix.tsv"/>
+            <param name="detection_matrix_2" ftype="tabular" value="test_detection_matrix.tsv"/>
+            <param name="evidence_matrix_2" ftype="tabular" value="test_evidence_matrix.tsv"/>
+            <param name="verbose" value="false"/>
+            <output name="combined_detection_matrix">
+                <assert_contents>
+                    <has_text text="Gene"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**Combine**
+
+GeneFior-Combine merges per-sample detection and evidence matrices from
+multiple GeneFíor or AMRfior runs into combined matrices. Provide the detection
+matrix (and optionally the evidence matrix) for each sample.
+
+Optionally, provide a samples file listing the sample folder names to include
+(one per line). If omitted, all subdirectories are processed.
+
+**Outputs:**
+
+- **Combined detection matrix** — Gene × Sample detection results
+- **Combined detection matrix (per tool)** — Gene × Sample × Tool detection results
+- **Combined evidence matrix** — Gene × Sample evidence qualification levels
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

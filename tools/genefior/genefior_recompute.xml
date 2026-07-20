@@ -1,0 +1,115 @@
+<tool id="genefior_recompute" name="GeneFior Recompute" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Recompute detection statistics from existing GeneFíor results</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Reconstruct a results directory from the provided TSV files
+mkdir -p input_results/raw_outputs &&
+cp '$detection_matrix' input_results/raw_outputs/detection_matrix.tsv &&
+#if $evidence_matrix:
+  cp '$evidence_matrix' input_results/raw_outputs/evidence_matrix.tsv &&
+#end if
+#if $evidence_summary:
+  cp '$evidence_summary' input_results/raw_outputs/evidence_summary.tsv &&
+#end if
+#if $allele_resolution:
+  cp '$allele_resolution' input_results/raw_outputs/allele_resolution.tsv &&
+#end if
+#if $query_fasta:
+  cp '$query_fasta' input_results/raw_outputs/query.fasta &&
+#end if
+mkdir -p output_dir &&
+GeneFior-recompute
+  -i input_results
+  -o output_dir
+  #if $tools:
+    --tools #echo ' '.join($tools)#
+  #end if
+  --q-min-cov $q_min_cov
+  --q-min-id $q_min_id
+  --d-min-cov $d_min_cov
+  --d-min-id $d_min_id
+  --d-min-depth $d_min_depth
+  --d-min-reads $d_min_reads
+  #if str($report_fasta) != 'None':
+    --report-fasta '$report_fasta'
+  #end if
+  #if str($report_read_names) != 'None':
+    --report-read-names '$report_read_names'
+  #end if
+  #if $query_fasta:
+    --query-fasta input_results/raw_outputs/query.fasta
+  #end if
+&& cd output_dir
+&& find . -name '*_detection_matrix.tsv' | head -1 | xargs -I{} cp {} ../recomputed_detection_matrix.tsv
+&& find . -name '*_evidence_matrix.tsv' | head -1 | xargs -I{} cp {} ../recomputed_evidence_matrix.tsv
+&& cd .. && zip -r results_archive.zip output_dir
+    ]]></command>
+    <inputs>
+        <param name="detection_matrix" type="data" format="tabular" label="Detection matrix from prior run" help="The *_detection_matrix.tsv file from a GeneFíor or AMRfior run"/>
+        <param name="evidence_matrix" type="data" format="tabular" optional="true" label="Evidence matrix from prior run" help="The *_evidence_matrix.tsv file"/>
+        <param name="evidence_summary" type="data" format="tabular" optional="true" label="Evidence summary from prior run" help="The *_evidence_summary.tsv file"/>
+        <param name="allele_resolution" type="data" format="tabular" optional="true" label="Allele resolution from prior run" help="The *_allele_resolution.tsv file"/>
+        <expand macro="tools_select"/>
+        <section name="thresholds" title="Detection thresholds" expanded="true">
+            <expand macro="threshold_params"/>
+        </section>
+        <expand macro="report_fasta_select"/>
+        <param name="report_read_names" type="select" optional="true" label="Report read names" help="Export deduplicated read names at the specified level">
+            <option value="all">all</option>
+            <option value="detected">detected</option>
+            <option value="evidence">evidence</option>
+            <option value="candidate">candidate</option>
+            <option value="exact">exact</option>
+        </param>
+        <param name="query_fasta" type="data" format="fasta,fasta.gz" optional="true" label="Query FASTA" help="Original query sequences for FASTA reporting"/>
+    </inputs>
+    <outputs>
+        <data name="recomputed_detection_matrix" format="tabular" label="${tool.name} on ${on_string}: Recomputed detection matrix"/>
+        <data name="recomputed_evidence_matrix" format="tabular" label="${tool.name} on ${on_string}: Recomputed evidence matrix"/>
+        <data name="results_archive" format="zip" label="${tool.name} on ${on_string}: Results archive"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <param name="detection_matrix" ftype="tabular" value="test_detection_matrix.tsv"/>
+            <param name="evidence_matrix" ftype="tabular" value="test_evidence_matrix.tsv"/>
+            <param name="evidence_summary" ftype="tabular" value="test_evidence_summary.tsv"/>
+            <param name="allele_resolution" ftype="tabular" value="test_allele_resolution.tsv"/>
+            <param name="tools" value="diamond"/>
+            <section name="thresholds">
+                <param name="--q-min-cov" value="40.0"/>
+                <param name="--q-min-id" value="80.0"/>
+                <param name="--d-min-cov" value="90.0"/>
+                <param name="--d-min-id" value="90.0"/>
+                <param name="--d-min-depth" value="1"/>
+                <param name="--d-min-reads" value="1"/>
+            </section>
+            <output name="recomputed_detection_matrix">
+                <assert_contents>
+                    <has_text text="Gene"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**Recompute**
+
+GeneFior-Recompute takes prior GeneFíor or AMRfior result files and
+recalculates detection statistics with new thresholds. This avoids re-running
+the alignment tools — only the detection/evidence classification is updated.
+
+Provide the detection matrix (and optionally the evidence matrix, evidence
+summary, and allele resolution) from a previous run, adjust the threshold
+parameters, and the tool will produce updated detection and evidence matrices.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

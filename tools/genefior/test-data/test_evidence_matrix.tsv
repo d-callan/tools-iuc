@@ -1,0 +1,4 @@
+Gene	Tool	Database	Evidence_Level	Allele	Allele_Identity_pct
+ref_gene_1	diamond	user_db	EXACT_ALLELE_DETECTED	ref_gene_1	100.0
+ref_gene_2	diamond	user_db	EXACT_ALLELE_DETECTED	ref_gene_2	100.0
+ref_gene_3	diamond	user_db	EXACT_ALLELE_DETECTED	ref_gene_3	100.0
