@@ -1,0 +1,15 @@
+categories:
+- Sequence Analysis
+description: Find low-complexity regions in DNA sequences using the symmetric DUST algorithm
+homepage_url: https://github.com/lh3/sdust
+long_description: |
+  Sdust is a standalone C tool by Heng Li that reimplements the symmetric DUST
+  algorithm for finding low-complexity regions in DNA sequences. It produces
+  output identical to NCBI's dustmasker (except in assembly gaps) while being
+  approximately four times faster. The tool reads a FASTA file and outputs a
+  BED-like tab-separated file with columns: sequence name, start position, and
+  end position of each masked low-complexity interval.
+name: sdust
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/sdust
+type: unrestricted
