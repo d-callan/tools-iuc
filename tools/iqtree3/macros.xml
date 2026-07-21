@@ -1,0 +1,184 @@
+<macros>
+    <token name="@TOOL_VERSION@">3.1.2</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">iqtree</xref>
+        </xrefs>
+    </xml>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">iqtree</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>iqtree --version 2&gt;&amp;1 | head -1</version_command>
+    </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="ERROR:"/>
+            <regex match="Error:"/>
+        </stdio>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1093/molbev/msag117</citation>
+            <citation type="doi">10.1093/molbev/msu300</citation>
+            <citation type="doi">10.1093/molbev/mst024</citation>
+            <yield/>
+        </citations>
+    </xml>
+    <xml name="alignment_input">
+        <param name="alignment" type="data" format="fasta,phylip,nexus,clustal" label="Input alignment file" help="Alignment in PHYLIP, FASTA, NEXUS, CLUSTAL or MSF format"/>
+    </xml>
+    <xml name="sequence_type">
+        <param name="sequence_type" type="select" label="Sequence type" optional="true" help="Override auto-detected sequence type">
+            <option value="DNA">DNA</option>
+            <option value="AA">Amino acid</option>
+            <option value="BIN">Binary</option>
+            <option value="MORPH">Morphological</option>
+            <option value="CODON">Codon</option>
+            <option value="NT2AA">DNA-to-AA translated</option>
+        </param>
+    </xml>
+    <xml name="model_selection">
+        <param name="model_spec" type="select" label="Substitution model" help="Choose a specific model or let IQ-TREE find the best-fit model">
+            <option value="MFP">ModelFinder Plus (MFP) - find best-fit model and infer tree (recommended)</option>
+            <option value="MF">ModelFinder Plus (MF) - find best-fit model only</option>
+            <option value="TEST">TEST - standard model selection and tree inference</option>
+            <option value="TESTONLY">TESTONLY - standard model selection only</option>
+            <option value="TESTMERGE">TESTMERGE - find best partitioning scheme and infer tree</option>
+            <option value="TESTMERGEONLY">TESTMERGEONLY - find best partitioning scheme only</option>
+            <option value="MFP+MERGE">MFP+MERGE - extended model selection with partition merging and tree inference</option>
+            <option value="MF+MERGE">MF+MERGE - extended model selection with partition merging only</option>
+            <option value="custom">Custom model string</option>
+        </param>
+        <param name="custom_model" type="text" label="Custom model string" optional="true" help="e.g. GTR+I+G for DNA, LG+F+G for protein. See IQ-TREE documentation for full syntax">
+            <validator type="regex" message="Invalid model string">^[A-Za-z0-9_+\{\}\-,]+$</validator>
+        </param>
+    </xml>
+    <xml name="bootstrap_options">
+        <param name="bb" type="integer" min="1000" optional="true" label="Ultrafast bootstrap replicates" help="Number of replicates (&gt;=1000) for ultrafast bootstrap (UFBoot)"/>
+        <param name="alrt" type="integer" min="0" optional="true" label="SH-aLRT replicates" help="Number of replicates (&gt;=1000) for SH-like approximate likelihood ratio test. Use 0 for parametric aLRT"/>
+        <param name="b" type="integer" min="100" optional="true" label="Nonparametric bootstrap replicates" help="Standard nonparametric bootstrap (recommended &gt;=100). Performs bootstrap, analysis on original alignment, and consensus tree"/>
+        <param name="bnni" type="boolean" truevalue="-bnni" falsevalue="" checked="false" label="Optimize UFBoot trees by NNI" help="Additional NNI optimization of UFBoot trees. Recommended under severe model violations. Increases runtime ~2-fold"/>
+    </xml>
+    <xml name="tree_search_options">
+        <param name="nstop" type="integer" optional="true" label="Number of unsuccessful iterations to stop" help="DEFAULT: 100"/>
+        <param name="pers" type="float" min="0" max="1" optional="true" label="Perturbation strength" help="Between 0 and 1 for randomized NNI. DEFAULT: 0.5"/>
+        <param name="allnni" type="boolean" truevalue="-allnni" falsevalue="" checked="false" label="Thorough NNI search" help="Consider all possible NNIs instead of only those near previously applied NNIs"/>
+        <param name="fast" type="boolean" truevalue="-fast" falsevalue="" checked="false" label="Fast tree search" help="Construct two starting trees (parsimony and BIONJ) and optimize by NNI only"/>
+        <param name="n" type="integer" optional="true" label="Number of iterations" help="Specify number of iterations to stop. Overrides -nstop criterion"/>
+    </xml>
+    <xml name="general_options">
+        <param name="seed" type="integer" optional="true" label="Random seed" help="Specify a random number seed to reproduce a previous run"/>
+        <param name="quiet" type="boolean" truevalue="-quiet" falsevalue="" checked="false" label="Quiet mode" help="Suppress printing to screen. Log file is still written"/>
+        <param name="keep_ident" type="boolean" truevalue="-keep-ident" falsevalue="" checked="false" label="Keep identical sequences" help="By default IQ-TREE removes identical sequences and adds them back at the end"/>
+        <param name="safe" type="boolean" truevalue="-safe" falsevalue="" checked="false" label="Safe numerical mode" help="Avoid numerical underflow for large datasets with many sequences"/>
+        <param name="redo" type="boolean" truevalue="-redo" falsevalue="" checked="false" label="Redo entire analysis" help="Overwrite all existing output files and redo the entire analysis"/>
+    </xml>
+    <token name="@THREADS@">-T \${GALAXY_SLOTS:-1}</token>
+    <token name="@MODEL_TOKEN@"><![CDATA[
+#if $sec_model.model_spec == "custom"
+  -m '$sec_model.custom_model'
+#else
+  -m $sec_model.model_spec
+#end if
+#if $sec_model.mset
+  -mset '$sec_model.mset'
+#end if
+#if $sec_model.msub
+  -msub $sec_model.msub
+#end if
+#if $sec_model.mrate
+  -mrate '$sec_model.mrate'
+#end if
+#if $sec_model.mfreq
+  -mfreq '$sec_model.mfreq'
+#end if
+#if $sec_model.cmin
+  -cmin $sec_model.cmin
+#end if
+#if $sec_model.cmax
+  -cmax $sec_model.cmax
+#end if
+#if $sec_model.merit
+  -merit $sec_model.merit
+#end if
+#if $sec_model.mtree
+  -mtree
+#end if
+#if $sec_model.rcluster
+  -rcluster $sec_model.rcluster
+#end if
+#if $sec_model.rclusterf
+  -rclusterf $sec_model.rclusterf
+#end if
+    ]]></token>
+    <token name="@PARTITION_TOKEN@"><![CDATA[
+#if $sec_partition.partition_file
+  $sec_partition.partition_type '$sec_partition.partition_file'
+#end if
+    ]]></token>
+    <token name="@BOOTSTRAP_TOKEN@"><![CDATA[
+#if $sec_bootstrap.bb
+  -bb $sec_bootstrap.bb
+#end if
+#if $sec_bootstrap.alrt
+  -alrt $sec_bootstrap.alrt
+#end if
+#if $sec_bootstrap.b
+  -b $sec_bootstrap.b
+#end if
+$sec_bootstrap.bnni
+#if $sec_bootstrap.bsam and str($sec_bootstrap.bsam) != ""
+  -bsam $sec_bootstrap.bsam
+#end if
+#if $sec_bootstrap.abayes
+  -abayes
+#end if
+#if $sec_bootstrap.lbp
+  -lbp $sec_bootstrap.lbp
+#end if
+    ]]></token>
+    <token name="@TREE_SEARCH_TOKEN@"><![CDATA[
+#if $sec_treesearch.nstop
+  -nstop $sec_treesearch.nstop
+#end if
+#if $sec_treesearch.pers
+  -pers $sec_treesearch.pers
+#end if
+$sec_treesearch.allnni
+$sec_treesearch.fast
+#if $sec_treesearch.n
+  -n $sec_treesearch.n
+#end if
+    ]]></token>
+    <token name="@GENERAL_TOKEN@"><![CDATA[
+#if $sec_general.seed
+  -seed $sec_general.seed
+#end if
+$sec_general.quiet
+$sec_general.keep_ident
+$sec_general.safe
+$sec_general.redo
+    ]]></token>
+    <token name="@EXTRA_TREE_TOKEN@"><![CDATA[
+#if $sec_extratree.starting_tree
+  -t '$sec_extratree.starting_tree'
+#end if
+#if $sec_extratree.fixed_tree
+  -te '$sec_extratree.fixed_tree'
+#end if
+#if $sec_extratree.constraint_tree
+  -g '$sec_extratree.constraint_tree'
+#end if
+#if $sec_extratree.outgroup
+  -o '$sec_extratree.outgroup'
+#end if
+    ]]></token>
+</macros>
