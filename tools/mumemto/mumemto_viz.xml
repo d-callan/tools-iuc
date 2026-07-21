@@ -5,8 +5,8 @@
     </macros>
     <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 ## Symlink mums and lengths files to matching prefixes so viz can find them
 ln -s '$mum_file' viz_input.mums &&
@@ -45,7 +45,7 @@ mumemto viz
             <param name="lengths_file" value="viz_test.lengths" ftype="tabular"/>
             <output name="plot_output" ftype="png">
                 <assert_contents>
-                    <has_size value="100" delta="100"/>
+                    <has_size value="72222" delta="1000"/>
                 </assert_contents>
             </output>
         </test>
