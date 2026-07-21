@@ -1,0 +1,22 @@
+---
+description: Mumemto: finding multi-MUMs and MEMs in pangenomes
+categories:
+- Sequence Analysis
+- Pangenomics
+owner: iuc
+homepage_url: https://github.com/vikshiv/mumemto
+long_description: |
+  Mumemto is a tool for finding maximal unique matches (multi-MUMs) and maximal
+  exact matches (multi-MEMs) across pangenome sequence collections. It uses the
+  prefix-free parse (PFP) algorithm for efficient suffix array construction on
+  large, repetitive text collections. Mumemto can also visualize pangenome
+  synteny, identify misassemblies, and provide a unifying structure to a pangenome.
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/mumemto
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for mumemto application {{ tool_name }}."
+suite:
+  name: "suite_mumemto"
+  description: "A suite of Galaxy tools for the mumemto pangenome analysis toolkit."
+  type: repository_suite_definition
