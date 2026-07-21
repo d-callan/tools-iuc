@@ -138,29 +138,29 @@ iqtree
         </section>
     </inputs>
     <outputs>
-        <data name="treefile" format="newick" label="${tool.name} tree on ${on_string}" from_work_dir="iqtree_output.treefile"/>
-        <data name="log" format="txt" label="${tool.name} log on ${on_string}" from_work_dir="iqtree_output.log"/>
-        <data name="iqtree_report" format="txt" label="${tool.name} report on ${on_string}" from_work_dir="iqtree_output.iqtree"/>
-        <data name="contree" format="newick" label="${tool.name} consensus tree on ${on_string}" from_work_dir="iqtree_output.contree">
-            <filter>sec_bootstrap.b is not None</filter>
+        <data name="treefile" format="newick" from_work_dir="iqtree_output.treefile"/>
+        <data name="log" format="txt" from_work_dir="iqtree_output.log"/>
+        <data name="iqtree_report" format="txt" from_work_dir="iqtree_output.iqtree"/>
+        <data name="contree" format="newick" from_work_dir="iqtree_output.contree">
+            <filter>sec_bootstrap.b</filter>
         </data>
-        <data name="ufboot_trees" format="newick" label="${tool.name} UFBoot trees on ${on_string}" from_work_dir="iqtree_output.ufboot">
-            <filter>sec_bootstrap.bb is not None</filter>
+        <data name="ufboot_trees" format="newick" from_work_dir="iqtree_output.ufboot">
+            <filter>sec_bootstrap.bb</filter>
         </data>
-        <data name="state" format="tabular" label="${tool.name} ancestral states on ${on_string}" from_work_dir="iqtree_output.state">
-            <filter>sec_general.asr is True</filter>
+        <data name="state" format="tabular" from_work_dir="iqtree_output.state">
+            <filter>sec_general.asr</filter>
         </data>
-        <data name="alninfo" format="tabular" label="${tool.name} alignment info on ${on_string}" from_work_dir="iqtree_output.alninfo">
-            <filter>sec_general.alninfo is True</filter>
+        <data name="alninfo" format="tabular" from_work_dir="iqtree_output.alninfo">
+            <filter>sec_general.alninfo</filter>
         </data>
-        <data name="sitelh" format="tabular" label="${tool.name} site likelihoods on ${on_string}" from_work_dir="iqtree_output.sitelh">
-            <filter>sec_general.wsl is True</filter>
+        <data name="sitelh" format="tabular" from_work_dir="iqtree_output.sitelh">
+            <filter>sec_general.wsl</filter>
         </data>
-        <data name="rate" format="tabular" label="${tool.name} per-site rates on ${on_string}" from_work_dir="iqtree_output.rate">
-            <filter>sec_general.wsr is True</filter>
+        <data name="rate" format="tabular" from_work_dir="iqtree_output.rate">
+            <filter>sec_general.wsr</filter>
         </data>
-        <data name="nex" format="nexus" label="${tool.name} SPRTA tree on ${on_string}" from_work_dir="iqtree_output.nex">
-            <filter>sec_general.sprta is True</filter>
+        <data name="nex" format="nexus" from_work_dir="iqtree_output.nex">
+            <filter>sec_general.sprta</filter>
         </data>
     </outputs>
     <tests>
@@ -177,20 +177,24 @@ iqtree
             <output name="treefile" ftype="newick">
                 <assert_contents>
                     <has_text text=";"/>
+                    <has_text text="seq1"/>
+                    <has_text text="seq8"/>
                 </assert_contents>
             </output>
             <output name="log" ftype="txt">
                 <assert_contents>
                     <has_text text="IQ-TREE"/>
+                    <has_text text="BEST SCORE FOUND"/>
                 </assert_contents>
             </output>
             <output name="iqtree_report" ftype="txt">
                 <assert_contents>
                     <has_text text="Log-likelihood"/>
+                    <has_text text="BEST SCORE"/>
                 </assert_contents>
             </output>
         </test>
-        <test expect_num_outputs="5">
+        <test expect_num_outputs="4">
             <param name="alignment" ftype="fasta" value="test_alignment.fasta"/>
             <section name="sec_general">
                 <param name="sequence_type" value="DNA"/>
@@ -207,21 +211,26 @@ iqtree
             <output name="treefile" ftype="newick">
                 <assert_contents>
                     <has_text text=";"/>
+                    <has_text text="seq1"/>
+                    <has_text text="seq8"/>
                 </assert_contents>
             </output>
             <output name="log" ftype="txt">
                 <assert_contents>
                     <has_text text="IQ-TREE"/>
+                    <has_text text="BEST SCORE FOUND"/>
                 </assert_contents>
             </output>
             <output name="iqtree_report" ftype="txt">
                 <assert_contents>
                     <has_text text="Log-likelihood"/>
+                    <has_text text="BEST SCORE"/>
                 </assert_contents>
             </output>
             <output name="ufboot_trees" ftype="newick">
                 <assert_contents>
                     <has_text text=";"/>
+                    <has_text text="seq1"/>
                 </assert_contents>
             </output>
         </test>
@@ -260,17 +269,15 @@ For pathogen data (e.g., SARS-CoV-2), IQ-TREE 3 integrates CMAPLE for efficient 
 
 ## Output files
 
-| File | Description |
-|------|-------------|
-| `.treefile` | Best ML tree in NEWICK format |
-| `.log` | Full log of the analysis |
-| `.iqtree` | Human-readable report with full results |
-| `.contree` | Consensus tree (if nonparametric bootstrap used) |
-| `.ufboot` | Bootstrap trees (if UFBoot used) |
-| `.state` | Ancestral sequences (if `-asr` used) |
-| `.alninfo` | Alignment site statistics (if `-alninfo` used) |
-| `.sitelh` | Site log-likelihoods (if `-wsl` used) |
-| `.rate` | Per-site rates (if `-wsr` used) |
+- **`.treefile`**: Best ML tree in NEWICK format
+- **`.log`**: Full log of the analysis
+- **`.iqtree`**: Human-readable report with full results
+- **`.contree`**: Consensus tree (if nonparametric bootstrap used)
+- **`.ufboot`**: Bootstrap trees (if UFBoot used)
+- **`.state`**: Ancestral sequences (if `-asr` used)
+- **`.alninfo`**: Alignment site statistics (if `-alninfo` used)
+- **`.sitelh`**: Site log-likelihoods (if `-wsl` used)
+- **`.rate`**: Per-site rates (if `-wsr` used)
 
 ## Documentation
 

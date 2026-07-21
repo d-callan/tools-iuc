@@ -1,7 +1,7 @@
 <macros>
     <token name="@TOOL_VERSION@">3.1.2</token>
     <token name="@VERSION_SUFFIX@">0</token>
-    <token name="@PROFILE@">24.1</token>
+    <token name="@PROFILE@">25.0</token>
     <xml name="bio_tools">
         <xrefs>
             <xref type="bio.tools">iqtree</xref>
@@ -29,7 +29,6 @@
             <citation type="doi">10.1093/molbev/msag117</citation>
             <citation type="doi">10.1093/molbev/msu300</citation>
             <citation type="doi">10.1093/molbev/mst024</citation>
-            <yield/>
         </citations>
     </xml>
     <xml name="alignment_input">
@@ -81,7 +80,7 @@
         <param name="safe" type="boolean" truevalue="-safe" falsevalue="" checked="false" label="Safe numerical mode" help="Avoid numerical underflow for large datasets with many sequences"/>
         <param name="redo" type="boolean" truevalue="-redo" falsevalue="" checked="false" label="Redo entire analysis" help="Overwrite all existing output files and redo the entire analysis"/>
     </xml>
-    <token name="@THREADS@">-T \${GALAXY_SLOTS:-1}</token>
+    <token name="@THREADS@">-T "\${GALAXY_SLOTS:-1}"</token>
     <token name="@MODEL_TOKEN@"><![CDATA[
 #if $sec_model.model_spec == "custom"
   -m '$sec_model.custom_model'
