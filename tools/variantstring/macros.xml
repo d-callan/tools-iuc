@@ -8,11 +8,6 @@
             <yield/>
         </requirements>
     </xml>
-    <xml name="bio_tools">
-        <xrefs>
-            <xref type="bio.tools">variantstring</xref>
-        </xrefs>
-    </xml>
     <xml name="stdio">
         <stdio>
             <exit_code range="1:"/>
