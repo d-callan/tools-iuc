@@ -22,19 +22,21 @@ sdust -w $w -t $t '$input_fasta' > '$output_bed'
             <param name="input_fasta" value="test.fa" ftype="fasta"/>
             <output name="output_bed" ftype="bed">
                 <assert_contents>
-                    <has_line_matching expression="seq1\t\d+\t\d+"/>
-                    <has_line_matching expression="seq2\t\d+\t\d+"/>
+                    <has_n_lines n="2"/>
+                    <has_line_matching expression="seq1\t0\t1\d\d"/>
+                    <has_line_matching expression="seq2\t0\t1\d\d"/>
                 </assert_contents>
             </output>
         </test>
         <test expect_num_outputs="1">
             <param name="input_fasta" value="test.fa" ftype="fasta"/>
-            <param name="w" value="32"/>
-            <param name="t" value="15"/>
+            <param argument="-w" value="32"/>
+            <param argument="-t" value="15"/>
             <output name="output_bed" ftype="bed">
                 <assert_contents>
-                    <has_line_matching expression="seq1\t\d+\t\d+"/>
-                    <has_line_matching expression="seq2\t\d+\t\d+"/>
+                    <has_n_lines n="2"/>
+                    <has_line_matching expression="seq1\t0\t1\d\d"/>
+                    <has_line_matching expression="seq2\t0\t1\d\d"/>
                 </assert_contents>
             </output>
         </test>
@@ -42,8 +44,9 @@ sdust -w $w -t $t '$input_fasta' > '$output_bed'
             <param name="input_fasta" value="test.fa.gz" ftype="fasta.gz"/>
             <output name="output_bed" ftype="bed">
                 <assert_contents>
-                    <has_line_matching expression="seq1\t\d+\t\d+"/>
-                    <has_line_matching expression="seq2\t\d+\t\d+"/>
+                    <has_n_lines n="2"/>
+                    <has_line_matching expression="seq1\t0\t1\d\d"/>
+                    <has_line_matching expression="seq2\t0\t1\d\d"/>
                 </assert_contents>
             </output>
         </test>
