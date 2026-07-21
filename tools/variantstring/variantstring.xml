@@ -5,8 +5,8 @@
     </macros>
     <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 Rscript '${__tool_directory__}/variantstring_wrapper.R'
 '$operation'
@@ -64,7 +64,7 @@ FALSE
         <param name="second_variant_column" type="integer" value="1" min="1" label="Second file variant column" help="Column number (1-based) in the second file containing variant strings"/>
     </inputs>
     <outputs>
-        <data name="output_file" format="tabular" label="${tool.name} on ${on_string}"/>
+        <data name="output_file" format="tabular"/>
     </outputs>
     <tests>
         <!-- Test 1: check_variant_string -->
