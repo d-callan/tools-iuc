@@ -1,0 +1,123 @@
+<tool name="pmotools export_table" id="pmotools_export_table" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Export PMO metadata sections as tabular files</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python ${export_type.export_command}
+  --file '$input_pmo'
+  --output '$output'
+  --delim '$export_type.delim'
+  --overwrite
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+        <conditional name="export_type">
+            <param name="export_command" type="select" label="Table to export">
+                <option value="export_specimen_meta_table">Specimen metadata</option>
+                <option value="export_library_sample_meta_table">Library sample metadata</option>
+                <option value="export_project_info_meta_table">Project info metadata</option>
+                <option value="export_sequencing_info_meta_table">Sequencing info metadata</option>
+                <option value="export_specimen_travel_meta_table">Specimen travel metadata</option>
+                <option value="export_targeted_genomes_meta_table">Targeted genomes metadata</option>
+                <option value="export_target_info_meta_table">Target info metadata</option>
+                <option value="export_panel_info_meta_table">Panel info metadata</option>
+                <option value="export_bioinformatics_run_info_meta_table">Bioinformatics run info</option>
+                <option value="export_bioinformatics_methods_info_meta_table">Bioinformatics methods info</option>
+            </param>
+            <when value="export_specimen_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_library_sample_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_project_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_sequencing_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_specimen_travel_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_targeted_genomes_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_target_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_panel_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_bioinformatics_run_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+            <when value="export_bioinformatics_methods_info_meta_table">
+                <expand macro="delim_select"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="tabular"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="export_type">
+                <param name="export_command" value="export_specimen_meta_table"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output" ftype="tabular">
+                <assert_contents>
+                    <has_text text="specimen_name"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="export_type">
+                <param name="export_command" value="export_target_info_meta_table"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output" ftype="tabular">
+                <assert_contents>
+                    <has_text text="target_name"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <conditional name="export_type">
+                <param name="export_command" value="export_panel_info_meta_table"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output" ftype="tabular">
+                <assert_contents>
+                    <has_text text="panel_name"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@HELP_PREAMBLE@
+
+**Export PMO to Table**
+
+Exports metadata sections from a PMO file as tabular files. Each section of the PMO can be exported individually:
+
+- **Specimen metadata**: Specimen-level information (name, collection date, country, etc.)
+- **Library sample metadata**: Library sample preparation information
+- **Project info metadata**: Project-level information
+- **Sequencing info metadata**: Sequencing run and platform information
+- **Specimen travel metadata**: Specimen travel/collection location information
+- **Targeted genomes metadata**: Reference genome information
+- **Target info metadata**: Target/amplicon information (primers, insert locations, etc.)
+- **Panel info metadata**: Panel and reaction information
+- **Bioinformatics run info**: Bioinformatics run names and dates
+- **Bioinformatics methods info**: Bioinformatics processing methods and versions
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
