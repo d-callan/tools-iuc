@@ -1,0 +1,242 @@
+<tool id="variantstring" name="variantstring" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Utilities for working with variant string format</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+Rscript '${__tool_directory__}/variantstring_wrapper.R'
+'$operation'
+'$input_file'
+'$variant_column'
+#if str($has_header) == 'true':
+TRUE
+#else:
+FALSE
+#end if
+'$output_file'
+#if str($operation) == 'compare_variant_string' or str($operation) == 'compare_position_string':
+'$target_string'
+#else:
+''
+#end if
+#if str($operation) == 'subset_position':
+'$position_string'
+#else:
+''
+#end if
+#if str($operation) == 'overlay_variant':
+'$second_input_file'
+'$second_variant_column'
+#else:
+''
+'1'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="operation" type="select" label="Operation" help="Choose the variantstring operation to perform">
+            <option value="check_variant_string">Check variant string — Validate variant strings</option>
+            <option value="check_position_string">Check position string — Validate position strings</option>
+            <option value="variant_to_long">Variant to long — Expand variant strings to long-form table</option>
+            <option value="position_from_variant_string">Position from variant string — Strip amino acids to get position strings</option>
+            <option value="subset_position">Subset position — Subset variant strings by position</option>
+            <option value="compare_variant_string">Compare variant string — Check if target genotype is present in comparison strings</option>
+            <option value="compare_position_string">Compare position string — Check if target positions are covered in comparison strings</option>
+            <option value="get_component_variants">Get component variants — Resolve component genotypes from mixed calls</option>
+            <option value="extract_single_locus_variants">Extract single-locus variants — Decompose multi-locus variant strings</option>
+            <option value="order_variant_string">Order variant string — Canonical sorting of variant strings</option>
+            <option value="drop_read_counts">Drop read counts — Remove read count information</option>
+            <option value="count_hets">Count hets — Count phased and unphased heterozygous loci</option>
+            <option value="overlay_variant">Overlay variant — Overlay one variant string onto another</option>
+        </param>
+        <param name="input_file" type="data" format="tabular" label="Input tabular file" help="Tabular file containing variant strings (one per row)"/>
+        <param name="variant_column" type="integer" value="1" min="1" label="Variant string column" help="Column number (1-based) containing variant strings"/>
+        <param name="has_header" type="select" label="Input file has header row" help="Choose whether the first row of the input file is a header">
+            <option value="false" selected="true">No</option>
+            <option value="true">Yes</option>
+        </param>
+        <param name="target_string" type="text" label="Target string" help="Target variant or position string for compare operations (required for compare_variant_string and compare_position_string)" optional="true"/>
+        <param name="position_string" type="text" label="Position string" help="Position string specifying which gene/position combinations to retain (required for subset_position)" optional="true"/>
+        <param name="second_input_file" type="data" format="tabular" optional="true" label="Second input tabular file" help="Second tabular file for overlay_variant (must have the same number of rows as the first file)"/>
+        <param name="second_variant_column" type="integer" value="1" min="1" label="Second file variant column" help="Column number (1-based) in the second file containing variant strings"/>
+    </inputs>
+    <outputs>
+        <data name="output_file" format="tabular" label="${tool.name} on ${on_string}"/>
+    </outputs>
+    <tests>
+        <!-- Test 1: check_variant_string -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="check_variant_string"/>
+            <param name="input_file" value="variant_strings_check.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="valid"/>
+                    <has_text text="crt:1:A"/>
+                    <has_text text="TRUE"/>
+                    <has_text text="FALSE"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 2: variant_to_long -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="variant_to_long"/>
+            <param name="input_file" value="variant_to_long_input.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="input_row"/>
+                    <has_text text="gene"/>
+                    <has_text text="pos"/>
+                    <has_text text="aa"/>
+                    <has_text text="pfcrt"/>
+                    <has_text text="pfmdr-1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 3: compare_variant_string -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="compare_variant_string"/>
+            <param name="input_file" value="compare_variant_strings.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <param name="target_string" value="dhps:437:G"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="match"/>
+                    <has_text text="ambiguous"/>
+                    <has_text text="dhps:437:G"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 4: compare_variant_string (ambiguous) -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="compare_variant_string"/>
+            <param name="input_file" value="compare_variant_strings_ambiguous.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <param name="target_string" value="dhps:437_540:G_K"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="match"/>
+                    <has_text text="ambiguous"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 5: get_component_variants -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="get_component_variants"/>
+            <param name="input_file" value="component_variants_input.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="component_variants"/>
+                    <has_text text="dhps:437_540:G_K"/>
+                    <has_text text="dhps:437_540:G_E"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 6: subset_position -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="subset_position"/>
+            <param name="input_file" value="subset_position_input.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <param name="position_string" value="dhps:437"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="subset"/>
+                    <has_text text="dhps:437:G"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 7: position_from_variant_string -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="position_from_variant_string"/>
+            <param name="input_file" value="subset_position_input.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="position_string"/>
+                    <has_text text="dhps:437_540"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 8: drop_read_counts -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="drop_read_counts"/>
+            <param name="input_file" value="drop_read_counts_input.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="no_read_counts"/>
+                    <has_text text="crt:1:A"/>
+                    <not_has_text text="crt:1:A:9"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 9: overlay_variant -->
+        <test expect_num_outputs="1">
+            <param name="operation" value="overlay_variant"/>
+            <param name="input_file" value="overlay_var1.tabular" ftype="tabular"/>
+            <param name="variant_column" value="1"/>
+            <param name="has_header" value="false"/>
+            <param name="second_input_file" value="overlay_var2.tabular" ftype="tabular"/>
+            <param name="second_variant_column" value="1"/>
+            <output name="output_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="overlay"/>
+                    <has_text text="crt:72_73:C_V"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# What it does
+
+This tool provides utilities for working with *variant string format*, a compact
+text format for encoding multi-locus amino-acid genotypes. For example, the
+string `pfcrt:72_73:C|S_V|A` encodes phased heterozygous calls at two codon
+positions in the *pfcrt* gene.
+
+# Variant string format rules
+
+1. Gene name, locus, and amino acid are separated by colons: `pfcrt:72:C`
+2. Multiple loci within a gene are separated by underscores: `pfcrt:72_73:CV`
+3. Unphased mixed calls use `/`: `pfcrt:72:C/S`
+4. Phased mixed calls use `|`: `pfcrt:72_73:C|S_V|A`
+5. Multiple genes are separated by semicolons: `pfcrt:72:C;pfmdr-1:86:Y`
+6. Optional read counts as a fourth element: `pfcrt:72:C:50`
+
+# Operations
+
+- **Check variant string**: Validate that strings conform to variant string format.
+- **Check position string**: Validate position strings (gene + position only).
+- **Variant to long**: Expand variant strings into a long-form table (one row per allele per locus).
+- **Position from variant string**: Strip amino acids to produce position strings.
+- **Subset position**: Subset variant strings to only specified gene/position combinations.
+- **Compare variant string**: Check if a target genotype is present in each comparison string. Reports match, ambiguous, and proportion (WSGF).
+- **Compare position string**: Check if target positions are covered in comparison strings.
+- **Get component variants**: Resolve unambiguous component genotypes from mixed calls.
+- **Extract single-locus variants**: Decompose multi-locus variant strings into single-locus variants.
+- **Order variant string**: Canonical sorting of variant strings.
+- **Drop read counts**: Remove read count information from variant strings.
+- **Count hets**: Count phased and unphased heterozygous loci.
+- **Overlay variant**: Combine two variant strings, with the first overwriting at shared positions.
+
+# Input format
+
+Input is a tabular file with variant strings in a specified column (default: column 1).
+For the **overlay variant** operation, a second tabular file is required with the same
+number of rows as the first file; rows are aligned by index.
+    ]]></help>
+    <expand macro="citation"/>
+</tool>

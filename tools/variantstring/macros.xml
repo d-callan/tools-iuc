@@ -1,0 +1,43 @@
+<macros>
+    <token name="@TOOL_VERSION@">1.8.7</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">r-variantstring</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">variantstring</xref>
+        </xrefs>
+    </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="Error:"/>
+            <regex match="Exception:"/>
+            <regex match="Execution halted"/>
+        </stdio>
+    </xml>
+    <xml name="version_command">
+        <version_command>Rscript -e 'library(variantstring); cat(as.character(packageVersion("variantstring")), "\n")'</version_command>
+    </xml>
+    <xml name="citation">
+        <citations>
+            <citation type="bibtex">
+                @misc{variantstring,
+                  author = {Bob Verity},
+                  title = {variantstring: Functions for working with variant string format},
+                  year = {2024},
+                  publisher = {GitHub},
+                  journal = {GitHub repository},
+                  howpublished = {\url{https://github.com/mrc-ide/variantstring}},
+                }
+            </citation>
+            <yield/>
+        </citations>
+    </xml>
+</macros>

@@ -1,0 +1,8 @@
+crt:1:A
+crt:1:A;mdr1:1:A
+crt:1:A:50
+crt:1_2:AB
+crt:1_2:A|B_C|D
+crt:1:A/S
+crt:1_2_3:ABC
+crt:1:A;mdr1:2:B
