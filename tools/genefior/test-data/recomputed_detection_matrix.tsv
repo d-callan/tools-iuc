@@ -1,0 +1,3 @@
+Gene	BLASTn	Bowtie2	BWA	Minimap2	DIAMOND-BLASTX	Total_Detections
+resfinder_gene_1	0	1	0	1	1	3
+resfinder_gene_2	0	0	0	0	0	0

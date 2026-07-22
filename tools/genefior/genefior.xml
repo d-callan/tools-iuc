@@ -1,0 +1,153 @@
+<tool id="genefior" name="GeneFior" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Multi-tool gene detection with user-provided databases</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p output_dir &&
+
+#if $sequence_type == 'Paired-FASTQ':
+    #set $input_str = $input + ',' + $input_r2
+#else:
+    #set $input_str = $input
+#end if
+
+GeneFior
+    -i '$input_str'
+    -st '$sequence_type'
+    --db-path '$db_path'
+    -o output_dir
+    -t \${GALAXY_SLOTS:-4}
+
+    #if $tools:
+        --tools #echo ' '.join($tools)#
+    #end if
+
+    #if str($sec_thresholds.report_fasta):
+        --report-fasta '$sec_thresholds.report_fasta'
+    #end if
+
+    #if $sequence_type == 'Genes-FASTA':
+        --genes-type '$genes_type'
+    #end if
+
+    --q-min-cov $sec_thresholds.q_min_cov
+    --q-min-id $sec_thresholds.q_min_id
+    --d-min-cov $sec_thresholds.d_min_cov
+    --d-min-id $sec_thresholds.d_min_id
+    --d-min-depth $sec_thresholds.d_min_depth
+    --d-min-reads $sec_thresholds.d_min_reads
+    --detection-system '$sec_thresholds.detection_system'
+
+    #if $sec_advanced.mode == 'dna-only':
+        --dna-only
+    #elif $sec_advanced.mode == 'protein-only':
+        --protein-only
+    #end if
+
+    #if str($sec_advanced.sensitivity) != 'default':
+        --sensitivity '$sec_advanced.sensitivity'
+    #end if
+
+    --minimap2-preset '$sec_advanced.minimap2_preset'
+    --blastx-task '$sec_advanced.blastx_task'
+
+    #if str($sec_advanced.evalue):
+        -e $sec_advanced.evalue
+    #end if
+
+    #if $sec_advanced.fastp_trim and $sequence_type == 'Paired-FASTQ':
+        --fastp-trim
+    #end if
+
+    #for $tp in $sec_advanced.tool_param:
+        --tool-param '$tp.tool_name=$tp.params'
+    #end for
+
+    $sec_advanced.verbose
+
+&& cd output_dir
+&& det=\$(find . -name '*_detection_matrix.tsv' | head -1) && mv "\$det" '$detection_matrix'
+&& evi=\$(find . -name '*_evidence_matrix.tsv' | head -1) && mv "\$evi" '$evidence_matrix'
+&& evs=\$(find . -name '*_evidence_summary.tsv' | head -1) && mv "\$evs" '$evidence_summary'
+&& all=\$(find . -name '*_allele_resolution.tsv' | head -1) && mv "\$all" '$allele_resolution'
+#if str($sec_thresholds.report_fasta):
+    && rep=\$(find . -name '*_report.fasta' | head -1) && mv "\$rep" '$report_fasta'
+#end if
+&& cd .. && zip -r '$results_archive' output_dir
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Input sequences" help="FASTA or FASTQ file (.gz accepted). For Paired-FASTQ, provide R1 here"/>
+        <param name="input_r2" type="data" format="fastq,fastq.gz" optional="true" label="R2 mate (Paired-FASTQ only)" help="Second read file for paired-end FASTQ input"/>
+        <param name="sequence_type" type="select" label="Sequence type" help="Specify the input type: Single-FASTA, Paired-FASTQ, or Genes-FASTA">
+            <option value="Single-FASTA" selected="true">Single-FASTA</option>
+            <option value="Paired-FASTQ">Paired-FASTQ</option>
+            <option value="Genes-FASTA">Genes-FASTA</option>
+        </param>
+        <param name="genes_type" type="select" label="Genes type (Genes-FASTA only)" help="Required when sequence type is Genes-FASTA: DNA or amino-acid sequences">
+            <option value="dna" selected="true">DNA</option>
+            <option value="aa">Amino acid (AA)</option>
+        </param>
+        <param name="db_path" type="text" value="" label="Database path" help="Comma-separated paths to user-provided database directories (built with build_database.sh)">
+            <validator type="empty_field" message="A database path is required"/>
+        </param>
+        <expand macro="tools_select"/>
+        <section name="sec_thresholds" expanded="false" title="Detection Thresholds">
+            <expand macro="threshold_params"/>
+            <expand macro="detection_system_select"/>
+            <expand macro="report_fasta_select"/>
+        </section>
+        <expand macro="advanced_options"/>
+    </inputs>
+    <outputs>
+        <data name="detection_matrix" format="tabular" label="${tool.name} detection matrix on ${on_string}"/>
+        <data name="evidence_matrix" format="tabular" label="${tool.name} evidence matrix on ${on_string}"/>
+        <data name="evidence_summary" format="tabular" label="${tool.name} evidence summary on ${on_string}"/>
+        <data name="allele_resolution" format="tabular" label="${tool.name} allele resolution on ${on_string}"/>
+        <data name="report_fasta" format="fasta" label="${tool.name} report FASTA on ${on_string}">
+            <filter>sec_thresholds['report_fasta']</filter>
+        </data>
+        <data name="results_archive" format="zip" label="${tool.name} results archive on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="6">
+            <param name="input" value="sample_single.fasta" ftype="fasta"/>
+            <param name="sequence_type" value="Single-FASTA"/>
+            <param name="db_path" value="/tmp/genefior_test_db"/>
+            <param name="tools" value="diamond"/>
+            <section name="sec_thresholds">
+                <param name="q_min_cov" value="40.0"/>
+                <param name="q_min_id" value="80.0"/>
+                <param name="d_min_cov" value="80.0"/>
+                <param name="d_min_id" value="80.0"/>
+                <param name="d_min_depth" value="1"/>
+                <param name="d_min_reads" value="1"/>
+            </section>
+            <output name="detection_matrix" file="user-provided-db_detection_matrix.tsv" ftype="tabular"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**GeneFior** — General-purpose gene detection with user-provided databases
+
+This tool runs the GeneFíor pipeline with user-provided reference databases.
+The database directory must be set up using the `build_database.sh` script
+shipped with GeneFíor, which creates the expected subdirectory structure
+(`blast_dna/`, `blast_aa/`, `diamond/`, `bowtie2/`, `bwa/`, `minimap2/`).
+
+**Outputs:**
+
+- **Detection matrix** — Binary presence/absence per gene and tool
+- **Evidence matrix** — Qualified per-tool evidence statuses
+- **Evidence summary** — Evidence, candidate-allele, and exact-allele counts
+- **Allele resolution** — Family-level top candidate and competing alleles
+- **Report FASTA** *(optional)* — Sequences passing detection thresholds
+- **Results archive** — Full output directory (zip), usable as input to
+  Recompute, Gene-Stats, or Combine
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

@@ -1,0 +1,3 @@
+Gene	Detection_System	BLASTn	Bowtie2	BWA	Minimap2	DIAMOND-BLASTX	Best_Evidence_Status	Evidence_Tools	Evidence_Detections	Candidate_Allele_Detections	Exact_Allele_Detections	Profile_Detections	Strict_Detections	Evidence_Warnings
+resfinder_gene_1	qualified	EXACT_ALLELE_DETECTED	EXACT_ALLELE_DETECTED	EXACT_ALLELE_DETECTED	EXACT_ALLELE_DETECTED	CANDIDATE_ALLELE_DETECTED	EXACT_ALLELE_DETECTED	BLASTn,Bowtie2,BWA,Minimap2,DIAMOND-BLASTX	5	1	4	0	4	
+resfinder_gene_2	qualified	NOT_DETECTED	CANDIDATE_ALLELE_DETECTED	NOT_DETECTED	ALLELE_LIKE	ALLELE_LIKE	CANDIDATE_ALLELE_DETECTED	Bowtie2,Minimap2,DIAMOND-BLASTX	3	1	0	0	1	

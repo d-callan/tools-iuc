@@ -1,0 +1,3 @@
+Gene	Family	Top_Candidate_Allele	Competing_Alleles	Mean_Identity	Coverage_Pct
+resfinder_gene_1	resfinder_family_1	resfinder_gene_1		100.0	100.0
+resfinder_gene_2	resfinder_family_2	resfinder_gene_2	resfinder_gene_1	98.5	95.0

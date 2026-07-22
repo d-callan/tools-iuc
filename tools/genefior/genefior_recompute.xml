@@ -1,0 +1,168 @@
+<tool id="genefior_recompute" name="GeneFior-Recompute" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Recalculate detection statistics from existing GeneFíor results</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p input_dir/raw_outputs output_dir &&
+
+#if $sec_raw_outputs.diamond_results:
+    ln -s '$sec_raw_outputs.diamond_results' 'input_dir/raw_outputs/user-provided-db_diamond_results.tsv' &&
+#end if
+#if $sec_raw_outputs.blastn_results:
+    ln -s '$sec_raw_outputs.blastn_results' 'input_dir/raw_outputs/user-provided-db_blastn_results.tsv' &&
+#end if
+#if $sec_raw_outputs.blastx_results:
+    ln -s '$sec_raw_outputs.blastx_results' 'input_dir/raw_outputs/user-provided-db_blastx_results.tsv' &&
+#end if
+#if $sec_raw_outputs.blastp_results:
+    ln -s '$sec_raw_outputs.blastp_results' 'input_dir/raw_outputs/user-provided-db_blastp_results.tsv' &&
+#end if
+#if $sec_raw_outputs.bowtie2_results:
+    ln -s '$sec_raw_outputs.bowtie2_results' 'input_dir/raw_outputs/user-provided-db_bowtie2_results_sorted.bam' &&
+#end if
+#if $sec_raw_outputs.bwa_results:
+    ln -s '$sec_raw_outputs.bwa_results' 'input_dir/raw_outputs/user-provided-db_bwa_results_sorted.bam' &&
+#end if
+#if $sec_raw_outputs.minimap2_results:
+    ln -s '$sec_raw_outputs.minimap2_results' 'input_dir/raw_outputs/user-provided-db_minimap2_results_sorted.bam' &&
+#end if
+#if $sec_raw_outputs.run_parameters:
+    ln -s '$sec_raw_outputs.run_parameters' 'input_dir/run_parameters.json' &&
+#end if
+
+GeneFior-recompute
+    -i input_dir
+    -o output_dir
+
+    #if $tools:
+        --tools #echo ' '.join($tools)#
+    #end if
+
+    --q-min-cov $sec_thresholds.q_min_cov
+    --q-min-id $sec_thresholds.q_min_id
+    --d-min-cov $sec_thresholds.d_min_cov
+    --d-min-id $sec_thresholds.d_min_id
+    --d-min-depth $sec_thresholds.d_min_depth
+    --d-min-reads $sec_thresholds.d_min_reads
+    --detection-system '$sec_thresholds.detection_system'
+
+    #if str($sec_thresholds.report_fasta):
+        --report-fasta '$sec_thresholds.report_fasta'
+    #end if
+
+    #if str($sec_thresholds.report_read_names):
+        --report-read-names '$sec_thresholds.report_read_names'
+    #end if
+
+    #if $query_fasta:
+        --query-fasta '$query_fasta'
+    #end if
+
+    #if str($sec_advanced.evalue):
+        --evalue $sec_advanced.evalue
+    #end if
+
+    $sec_advanced.allow_incomplete_relaxation
+    $sec_advanced.verbose
+
+&& cd output_dir
+&& det=\$(find . -name '*_detection_matrix.tsv' | head -1) && mv "\$det" '$recomputed_detection_matrix'
+&& evi=\$(find . -name '*_evidence_matrix.tsv' | head -1) && mv "\$evi" '$recomputed_evidence_matrix'
+&& cd .. && zip -r '$results_archive' output_dir
+    ]]></command>
+    <inputs>
+        <section name="sec_raw_outputs" expanded="true" title="Raw Alignment Outputs">
+            <param name="run_parameters" type="data" format="json" optional="true" label="Run parameters JSON" help="The run_parameters.json from the original GeneFíor run (optional, but recommended for inheriting source thresholds)"/>
+            <param name="diamond_results" type="data" format="tabular" optional="true" label="DIAMOND results TSV" help="DIAMOND results TSV file from the original run"/>
+            <param name="blastn_results" type="data" format="tabular" optional="true" label="BLASTn results TSV" help="BLASTn results TSV file from the original run"/>
+            <param name="blastx_results" type="data" format="tabular" optional="true" label="BLASTx results TSV" help="BLASTx results TSV file from the original run"/>
+            <param name="blastp_results" type="data" format="tabular" optional="true" label="BLASTp results TSV" help="BLASTp results TSV file from the original run"/>
+            <param name="bowtie2_results" type="data" format="bam" optional="true" label="Bowtie2 sorted BAM" help="Bowtie2 sorted BAM file from the original run"/>
+            <param name="bwa_results" type="data" format="bam" optional="true" label="BWA sorted BAM" help="BWA sorted BAM file from the original run"/>
+            <param name="minimap2_results" type="data" format="bam" optional="true" label="Minimap2 sorted BAM" help="Minimap2 sorted BAM file from the original run"/>
+        </section>
+        <param name="query_fasta" type="data" format="fasta,fastq,fasta.gz,fastq.gz" optional="true" label="Query FASTA (for FASTA reporting)" help="Original query file used for alignment. Required when --report-fasta is used with BLAST/DIAMOND outputs"/>
+        <expand macro="tools_select"/>
+        <section name="sec_thresholds" expanded="false" title="Recompute Thresholds">
+            <expand macro="threshold_params"/>
+            <expand macro="detection_system_select"/>
+            <param argument="--report-fasta" type="select" label="Report FASTA" help="Output sequences that mapped to genes">
+                <option value="" selected="true">None</option>
+                <option value="all">All mapped reads</option>
+                <option value="detected">Detected (passing reads per detected gene)</option>
+                <option value="detected-all">Detected-all (all reads for evidence genes)</option>
+                <option value="evidence">Evidence (alias for detected)</option>
+                <option value="evidence-all">Evidence-all (alias for detected-all)</option>
+                <option value="candidate">Candidate (candidate allele calls)</option>
+                <option value="candidate-all">Candidate-all</option>
+                <option value="exact">Exact (exact nucleotide alleles)</option>
+                <option value="exact-all">Exact-all</option>
+            </param>
+            <param argument="--report-read-names" type="select" label="Report read names" help="Write deduplicated read-name files per database/tool/gene">
+                <option value="" selected="true">None</option>
+                <option value="all">All mapped reads</option>
+                <option value="detected">Detected</option>
+                <option value="detected-all">Detected-all</option>
+                <option value="evidence">Evidence</option>
+                <option value="evidence-all">Evidence-all</option>
+                <option value="candidate">Candidate</option>
+                <option value="candidate-all">Candidate-all</option>
+                <option value="exact">Exact</option>
+                <option value="exact-all">Exact-all</option>
+            </param>
+        </section>
+        <section name="sec_advanced" expanded="false" title="Advanced Options">
+            <param name="evalue" type="float" value="" label="E-value threshold" help="Optional e-value threshold to apply when recomputing"/>
+            <param name="allow_incomplete_relaxation" type="boolean" truevalue="--allow-incomplete-relaxation" falsevalue="" checked="false" label="Allow incomplete relaxation" help="Allow thresholds that are more permissive than the source run, acknowledging that previously discarded hits cannot be recovered"/>
+            <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose logging"/>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="recomputed_detection_matrix" format="tabular" label="${tool.name} detection matrix on ${on_string}"/>
+        <data name="recomputed_evidence_matrix" format="tabular" label="${tool.name} evidence matrix on ${on_string}"/>
+        <data name="results_archive" format="zip" label="${tool.name} results archive on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <section name="sec_raw_outputs">
+                <param name="diamond_results" value="user-provided-db_diamond_results.tsv" ftype="tabular"/>
+                <param name="run_parameters" value="run_parameters.json" ftype="json"/>
+            </section>
+            <section name="sec_thresholds">
+                <param name="q_min_cov" value="40.0"/>
+                <param name="q_min_id" value="80.0"/>
+                <param name="d_min_cov" value="80.0"/>
+                <param name="d_min_id" value="80.0"/>
+                <param name="d_min_depth" value="1"/>
+                <param name="d_min_reads" value="1"/>
+            </section>
+            <output name="recomputed_detection_matrix" file="recomputed_detection_matrix.tsv" ftype="tabular"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**GeneFior-Recompute** — Recalculate detection statistics
+
+This tool recalculates detection statistics from existing sequence search
+outputs with different thresholds without needing to rerun the entire
+analysis. Provide the raw alignment output files (BLAST/DIAMOND TSVs and/or
+sorted BAM files) from a prior GeneFíor or AMRfior run.
+
+**Important:** Query-level thresholds can be tightened safely. Relaxing them
+below the source run is rejected because source BLAST/DIAMOND outputs were
+already filtered. Use the "Allow incomplete relaxation" option to explicitly
+accept incomplete results.
+
+**Outputs:**
+
+- **Detection matrix** — Recomputed binary presence/absence per gene and tool
+- **Evidence matrix** — Recomputed qualified per-tool evidence statuses
+- **Results archive** — Full recomputed output directory (zip)
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
