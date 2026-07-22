@@ -7,9 +7,6 @@
             <requirement type="package" version="@TOOL_VERSION@">pmotools</requirement>
         </requirements>
     </xml>
-    <xml name="version_command">
-        <version_command>pmotools-python --version</version_command>
-    </xml>
     <xml name="stdio">
         <stdio>
             <exit_code range="1:"/>
@@ -17,6 +14,9 @@
             <regex match="Error:"/>
             <regex match="Exception:"/>
         </stdio>
+    </xml>
+    <xml name="version_command">
+        <version_command>pmotools-python --version</version_command>
     </xml>
     <xml name="citations">
         <citations>

@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 pmotools-python ${convert_type.convert_command}
   --file '$convert_type.input_file'
@@ -83,13 +83,13 @@ pmotools-python ${convert_type.convert_command}
     <tests>
         <test expect_num_outputs="1">
             <conditional name="convert_type">
-                <param name="convert_command" value="text_meta_to_json_meta"/>
-                <param name="input_file" ftype="tabular" value="text_meta_input.tsv"/>
+                <param name="convert_command" value="microhaplotype_table_to_json_file"/>
+                <param name="input_file" ftype="tabular" value="test_pmo_table.tsv"/>
                 <param name="delim" value="tab"/>
             </conditional>
             <output name="output_json" ftype="json">
                 <assert_contents>
-                    <has_text text="specimen_name"/>
+                    <has_text text="pmo_header"/>
                 </assert_contents>
             </output>
         </test>

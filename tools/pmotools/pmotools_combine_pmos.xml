@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 #set $pmo_files_list = []
 #for $pmo in $input_pmos:
@@ -24,8 +24,7 @@ pmotools-python combine_pmos
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_pmos" ftype="json" value="minimum_pmo_example.json"/>
-            <param name="input_pmos" ftype="json" value="minimum_pmo_example_2.json"/>
+            <param name="input_pmos" ftype="json" value="minimum_pmo_example.json,minimum_pmo_example_2.json"/>
             <output name="output_pmo" ftype="json">
                 <assert_contents>
                     <has_text text="pmo_header"/>

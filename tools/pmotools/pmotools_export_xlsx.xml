@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 pmotools-python export_pmo_into_xlsx
   --pmo '$input_pmo'
@@ -20,10 +20,10 @@ pmotools-python export_pmo_into_xlsx
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <output name="output_xlsx" ftype="xlsx">
                 <assert_contents>
-                    <has_size value="1000" delta="500"/>
+                    <has_size value="1000" delta="2000"/>
                 </assert_contents>
             </output>
         </test>

@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 pmotools-python ${extract_type.extract_command}
   --file '$input_pmo'
@@ -108,22 +108,22 @@ pmotools-python ${extract_type.extract_command}
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="combined_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="extract_type">
                 <param name="extract_command" value="extract_pmo_with_select_specimen_names"/>
                 <conditional name="specimen_names_source">
                     <param name="specimen_names_source_selector" value="text"/>
-                    <param name="specimen_names" value="8025874217"/>
+                    <param name="specimen_names" value="specimen_01"/>
                 </conditional>
             </conditional>
             <output name="output_pmo" ftype="json">
                 <assert_contents>
-                    <has_text text="8025874217"/>
+                    <has_text text="specimen_01"/>
                 </assert_contents>
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="extract_type">
                 <param name="extract_command" value="extract_pmo_with_read_filter"/>
                 <param name="read_count_minimum" value="10"/>

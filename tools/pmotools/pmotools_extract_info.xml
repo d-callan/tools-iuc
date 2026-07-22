@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 pmotools-python ${info_type.info_command}
   --file '$input_pmo'
@@ -61,7 +61,7 @@ pmotools-python ${info_type.info_command}
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="info_type">
                 <param name="info_command" value="list_specimen_meta_fields"/>
                 <param name="delim" value="tab"/>
@@ -73,7 +73,7 @@ pmotools-python ${info_type.info_command}
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="info_type">
                 <param name="info_command" value="count_targets_per_library_sample"/>
                 <param name="read_count_minimum" value="0"/>
@@ -86,13 +86,13 @@ pmotools-python ${info_type.info_command}
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="info_type">
                 <param name="info_command" value="list_bioinformatics_run_names"/>
             </conditional>
             <output name="output" ftype="tabular">
                 <assert_contents>
-                    <has_text text="SeekDeep"/>
+                    <has_text text="test_run_001"/>
                 </assert_contents>
             </output>
         </test>

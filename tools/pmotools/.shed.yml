@@ -1,7 +1,6 @@
 ---
 description: pmotools-python toolkit wrappers for working with Portable Microhaplotype Object (PMO) files
 categories:
-- Genomics
 - Sequence Analysis
 owner: iuc
 homepage_url: https://plasmogenepi.github.io/pmotools-python/index.html

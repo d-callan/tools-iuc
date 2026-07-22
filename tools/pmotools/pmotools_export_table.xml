@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 pmotools-python ${export_type.export_command}
   --file '$input_pmo'
@@ -65,7 +65,7 @@ pmotools-python ${export_type.export_command}
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="export_type">
                 <param name="export_command" value="export_specimen_meta_table"/>
                 <param name="delim" value="tab"/>
@@ -77,7 +77,7 @@ pmotools-python ${export_type.export_command}
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="export_type">
                 <param name="export_command" value="export_target_info_meta_table"/>
                 <param name="delim" value="tab"/>
@@ -89,7 +89,7 @@ pmotools-python ${export_type.export_command}
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="export_type">
                 <param name="export_command" value="export_panel_info_meta_table"/>
                 <param name="delim" value="tab"/>

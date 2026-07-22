@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 pmotools-python ${extract_type.extract_command}
   --file '$input_pmo'
@@ -33,7 +33,7 @@ pmotools-python ${extract_type.extract_command}
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="extract_type">
                 <param name="extract_command" value="extract_insert_of_panels"/>
                 <param name="add_ref_seqs" value="false"/>
@@ -48,7 +48,7 @@ pmotools-python ${extract_type.extract_command}
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="extract_type">
                 <param name="extract_command" value="extract_insert_of_panels"/>
                 <param name="add_ref_seqs" value="true"/>
@@ -60,7 +60,7 @@ pmotools-python ${extract_type.extract_command}
             </output>
         </test>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <conditional name="extract_type">
                 <param name="extract_command" value="extract_refseq_of_inserts_of_panels"/>
             </conditional>

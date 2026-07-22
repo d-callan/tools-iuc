@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 pmotools-python extract_allele_table
   --file '$input_pmo'
@@ -43,13 +43,13 @@ pmotools-python extract_allele_table
     </inputs>
     <outputs>
         <data name="output_table" format="tabular"/>
-        <data name="output_freqs" format="tabular">
+        <data name="output_freqs" format="tabular" label="${tool.name} allele frequencies on ${on_string}">
             <filter>allele_freqs</filter>
         </data>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <param name="delim" value="tab"/>
             <param name="skip_validation" value="true"/>
             <output name="output_table" ftype="tabular">
@@ -61,7 +61,7 @@ pmotools-python extract_allele_table
             </output>
         </test>
         <test expect_num_outputs="2">
-            <param name="input_pmo" ftype="json" value="minimum_pmo_example.json"/>
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
             <param name="delim" value="tab"/>
             <param name="skip_validation" value="true"/>
             <param name="allele_freqs" value="true"/>
