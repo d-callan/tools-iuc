@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 mkdir -p input_dir/raw_outputs output_dir &&
 
@@ -98,9 +98,10 @@ GeneFior-gene-stats
             <option value="candidate-or-exact">Candidate or exact</option>
             <option value="all">All genes</option>
         </param>
-        <param name="databases" type="select" multiple="true" label="Databases" help="Database(s) to interrogate">
-            <option value="resfinder" selected="true">ResFinder</option>
-            <option value="card" selected="true">CARD</option>
+        <param name="databases" type="select" multiple="true" label="Databases" help="Database(s) to interrogate. Use 'user-provided-db' for GeneFior runs, or 'resfinder'/'card'/'ncbi' for AMRfior runs">
+            <option value="user-provided-db" selected="true">user-provided-db</option>
+            <option value="resfinder">ResFinder</option>
+            <option value="card">CARD</option>
             <option value="ncbi">NCBI AMR</option>
             <option value="all">All (auto-discover)</option>
         </param>
@@ -135,7 +136,7 @@ GeneFior-gene-stats
                 <param name="evidence_matrix" value="user-provided-db_evidence_matrix.tsv" ftype="tabular"/>
             </section>
             <param name="genes" value="resfinder_gene_1"/>
-            <param name="databases" value="resfinder"/>
+            <param name="databases" value="user-provided-db"/>
             <param name="tools" value="diamond"/>
             <output name="results_archive" ftype="zip">
                 <assert_contents>

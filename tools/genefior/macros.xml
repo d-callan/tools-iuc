@@ -108,7 +108,7 @@
             <expand macro="sensitivity_select"/>
             <expand macro="minimap2_preset_select"/>
             <expand macro="blastx_task_select"/>
-            <param argument="-e" name="evalue" type="float" value="" label="E-value threshold" help="E-value threshold for BLASTn/x and DIAMOND. If not set, the tools' default is used"/>
+            <param argument="-e" name="evalue" type="float" optional="true" label="E-value threshold" help="E-value threshold for BLASTn/x and DIAMOND. If not set, the tools' default is used"/>
             <param name="fastp_trim" type="boolean" truevalue="--fastp-trim" falsevalue="" checked="false" label="Run fastp trimming" help="For Paired-FASTQ input, run fastp automatic adapter and quality trimming before analysis"/>
             <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose logging"/>
             <repeat name="tool_param" title="Extra tool parameters" min="0" help="Specify extra parameters for a specific tool, e.g. diamond=--more-sensitive -e 1e-5">

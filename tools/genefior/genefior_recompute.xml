@@ -4,8 +4,8 @@
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 mkdir -p input_dir/raw_outputs output_dir &&
 
@@ -116,7 +116,7 @@ GeneFior-recompute
             </param>
         </section>
         <section name="sec_advanced" expanded="false" title="Advanced Options">
-            <param name="evalue" type="float" value="" label="E-value threshold" help="Optional e-value threshold to apply when recomputing"/>
+            <param name="evalue" type="float" optional="true" label="E-value threshold" help="Optional e-value threshold to apply when recomputing"/>
             <param name="allow_incomplete_relaxation" type="boolean" truevalue="--allow-incomplete-relaxation" falsevalue="" checked="false" label="Allow incomplete relaxation" help="Allow thresholds that are more permissive than the source run, acknowledging that previously discarded hits cannot be recovered"/>
             <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose logging"/>
         </section>
