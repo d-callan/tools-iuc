@@ -139,28 +139,22 @@ iqtree
     </inputs>
     <outputs>
         <data name="treefile" format="newick" from_work_dir="iqtree_output.treefile"/>
-        <data name="log" format="txt" from_work_dir="iqtree_output.log"/>
-        <data name="iqtree_report" format="txt" from_work_dir="iqtree_output.iqtree"/>
-        <data name="contree" format="newick" from_work_dir="iqtree_output.contree">
-            <filter>sec_bootstrap.b</filter>
+        <data name="log" format="txt" from_work_dir="iqtree_output.log" label="${tool.name} log on ${on_string}"/>
+        <data name="iqtree_report" format="txt" from_work_dir="iqtree_output.iqtree" label="${tool.name} report on ${on_string}"/>
+        <data name="contree" format="newick" from_work_dir="iqtree_output.contree" label="${tool.name} consensus tree on ${on_string}">
+            <filter>sec_bootstrap['b'] or sec_bootstrap['bb']</filter>
         </data>
-        <data name="ufboot_trees" format="newick" from_work_dir="iqtree_output.ufboot">
-            <filter>sec_bootstrap.bb</filter>
+        <data name="state" format="tabular" from_work_dir="iqtree_output.state" label="${tool.name} ancestral sequences on ${on_string}">
+            <filter>sec_general['asr']</filter>
         </data>
-        <data name="state" format="tabular" from_work_dir="iqtree_output.state">
-            <filter>sec_general.asr</filter>
+        <data name="alninfo" format="tabular" from_work_dir="iqtree_output.alninfo" label="${tool.name} alignment info on ${on_string}">
+            <filter>sec_general['alninfo']</filter>
         </data>
-        <data name="alninfo" format="tabular" from_work_dir="iqtree_output.alninfo">
-            <filter>sec_general.alninfo</filter>
+        <data name="sitelh" format="tabular" from_work_dir="iqtree_output.sitelh" label="${tool.name} site log-likelihoods on ${on_string}">
+            <filter>sec_general['wsl']</filter>
         </data>
-        <data name="sitelh" format="tabular" from_work_dir="iqtree_output.sitelh">
-            <filter>sec_general.wsl</filter>
-        </data>
-        <data name="rate" format="tabular" from_work_dir="iqtree_output.rate">
-            <filter>sec_general.wsr</filter>
-        </data>
-        <data name="nex" format="nexus" from_work_dir="iqtree_output.nex">
-            <filter>sec_general.sprta</filter>
+        <data name="rate" format="tabular" from_work_dir="iqtree_output.rate" label="${tool.name} site rates on ${on_string}">
+            <filter>sec_general['wsr']</filter>
         </data>
     </outputs>
     <tests>
@@ -179,18 +173,22 @@ iqtree
                     <has_text text=";"/>
                     <has_text text="seq1"/>
                     <has_text text="seq8"/>
+                    <has_line_matching expression="^.*seq[1-8].*$"/>
                 </assert_contents>
             </output>
             <output name="log" ftype="txt">
                 <assert_contents>
                     <has_text text="IQ-TREE"/>
                     <has_text text="BEST SCORE FOUND"/>
+                    <has_text text="Analysis results written to"/>
                 </assert_contents>
             </output>
             <output name="iqtree_report" ftype="txt">
                 <assert_contents>
                     <has_text text="Log-likelihood"/>
-                    <has_text text="BEST SCORE"/>
+                    <has_text text="MAXIMUM LIKELIHOOD TREE"/>
+                    <has_text text="Akaike information criterion"/>
+                    <has_text text="8 sequences"/>
                 </assert_contents>
             </output>
         </test>
@@ -213,24 +211,29 @@ iqtree
                     <has_text text=";"/>
                     <has_text text="seq1"/>
                     <has_text text="seq8"/>
+                    <has_line_matching expression="^.*seq[1-8].*$"/>
                 </assert_contents>
             </output>
             <output name="log" ftype="txt">
                 <assert_contents>
                     <has_text text="IQ-TREE"/>
                     <has_text text="BEST SCORE FOUND"/>
+                    <has_text text="ultrafast bootstrap"/>
                 </assert_contents>
             </output>
             <output name="iqtree_report" ftype="txt">
                 <assert_contents>
                     <has_text text="Log-likelihood"/>
-                    <has_text text="BEST SCORE"/>
+                    <has_text text="ultrafast bootstrap"/>
+                    <has_text text="CONSENSUS TREE"/>
+                    <has_text text="8 sequences"/>
                 </assert_contents>
             </output>
-            <output name="ufboot_trees" ftype="newick">
+            <output name="contree" ftype="newick">
                 <assert_contents>
                     <has_text text=";"/>
                     <has_text text="seq1"/>
+                    <has_text text="seq8"/>
                 </assert_contents>
             </output>
         </test>
@@ -272,8 +275,7 @@ For pathogen data (e.g., SARS-CoV-2), IQ-TREE 3 integrates CMAPLE for efficient 
 - **`.treefile`**: Best ML tree in NEWICK format
 - **`.log`**: Full log of the analysis
 - **`.iqtree`**: Human-readable report with full results
-- **`.contree`**: Consensus tree (if nonparametric bootstrap used)
-- **`.ufboot`**: Bootstrap trees (if UFBoot used)
+- **`.contree`**: Consensus tree (if bootstrap used)
 - **`.state`**: Ancestral sequences (if `-asr` used)
 - **`.alninfo`**: Alignment site statistics (if `-alninfo` used)
 - **`.sitelh`**: Site log-likelihoods (if `-wsl` used)
