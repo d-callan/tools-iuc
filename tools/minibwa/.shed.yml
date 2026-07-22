@@ -1,0 +1,22 @@
+---
+categories:
+- Sequence Analysis
+description: Minibwa short/long-read aligner - successor to BWA-MEM
+homepage_url: https://github.com/lh3/minibwa
+long_description: |
+  Minibwa aligns short reads (and accurate long reads) against a reference genome.
+  It is the successor to BWA-MEM, combining BWA-MEM variable-length seeding with
+  minimap2 chaining and SIMD base alignment. Minibwa is approximately 4x faster
+  than BWA-MEM and 2x faster than BWA-MEM2 at comparable accuracy. It also natively
+  supports directional bisulfite sequencing (BS-seq) data and Hi-C read mapping.
+name: minibwa
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/minibwa
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for the minibwa application: {{ tool_name }}."
+suite:
+  name: "suite_minibwa"
+  description: "A suite of Galaxy tools for the minibwa read aligner."
+  type: repository_suite_definition

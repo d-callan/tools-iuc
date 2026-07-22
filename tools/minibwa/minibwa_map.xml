@@ -1,0 +1,406 @@
+<tool id="minibwa_map" name="minibwa map" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Align short/long reads to a reference genome</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Prepare reference: either build index from history FASTA or use cached FASTA
+#if $reference_source.reference_source_selector == "history":
+    ln -s '$reference_source.fasta_ref' 'ref.fa' &&
+    #if $meth:
+        minibwa index --meth -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' &&
+    #else:
+        minibwa index -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' &&
+    #end if
+    #set $idx_prefix = 'ref'
+#else:
+    #set $ref_path = str($reference_source.fasta_ref.fields.path)
+    #if $meth:
+        minibwa index --meth -t \${GALAXY_SLOTS:-1} '$ref_path' 'ref' &&
+    #else:
+        minibwa index -t \${GALAXY_SLOTS:-1} '$ref_path' 'ref' &&
+    #end if
+    #set $idx_prefix = 'ref'
+#end if
+
+minibwa map
+-t \${GALAXY_SLOTS:-4}
+#if str($preset) != "adap":
+    -x $preset
+#end if
+#if str($output_format) == "paf":
+    -f
+#end if
+#if $meth:
+    --meth
+#end if
+#if $hic:
+    --hic
+#end if
+#if str($read_group):
+    -R '$read_group'
+#end if
+#if str($base_tag) != "none":
+    -b $base_tag
+#end if
+#if $read_length_threshold:
+    -l $read_length_threshold
+#end if
+#if $sec_mapping.chain_only:
+    --chain-only
+#end if
+#if str($sec_mapping.adap_override) != "default":
+    --adap=$sec_mapping.adap_override
+#end if
+#if str($sec_mapping.long_override) != "default":
+    --long=$sec_mapping.long_override
+#end if
+#if $sec_mapping.min_seed_len:
+    -k $sec_mapping.min_seed_len
+#end if
+#if $sec_mapping.max_seed_occ:
+    -c $sec_mapping.max_seed_occ
+#end if
+#if $sec_mapping.chain_gap:
+    -g $sec_mapping.chain_gap
+#end if
+#if $sec_mapping.bandwidth:
+    -w $sec_mapping.bandwidth
+#end if
+#if $sec_mapping.sec_bandwidth:
+    -W $sec_mapping.sec_bandwidth
+#end if
+#if $sec_mapping.min_chain_score:
+    -m $sec_mapping.min_chain_score
+#end if
+#if $sec_mapping.min_sec_ratio:
+    -p $sec_mapping.min_sec_ratio
+#end if
+#if $sec_mapping.max_secondary:
+    -N $sec_mapping.max_secondary
+#end if
+#if $sec_alignment.match_score:
+    -A $sec_alignment.match_score
+#end if
+#if $sec_alignment.mismatch_penalty:
+    -B $sec_alignment.mismatch_penalty
+#end if
+#if $sec_alignment.gap_open:
+    -O $sec_alignment.gap_open
+#end if
+#if $sec_alignment.gap_extend:
+    -E $sec_alignment.gap_extend
+#end if
+#if $sec_paired.skip_pairing:
+    -P
+#end if
+#if $sec_paired.rescue:
+    --rescue=$sec_paired.rescue
+#end if
+#if str($sec_paired.pe_override) != "default":
+    --pe=$sec_paired.pe_override
+#end if
+#if $sec_paired.insert_size:
+    -I $sec_paired.insert_size
+#end if
+#if $sec_output.skip_unmapped:
+    -u
+#end if
+#if $sec_output.outn:
+    --outn=$sec_output.outn
+#end if
+#if $sec_output.xa:
+    --xa=$sec_output.xa
+#end if
+#if $sec_output.xa_ratio:
+    --xa-ratio=$sec_output.xa_ratio
+#end if
+#if $sec_output.copy_comments:
+    -y
+#end if
+#if $sec_output.soft_clip_supp:
+    -Y
+#end if
+#if str($sec_output.header_line):
+    -H '$sec_output.header_line'
+#end if
+#if $sec_output.five_prime_primary:
+    -5
+#end if
+#if $sec_output.batch_size:
+    -K $sec_output.batch_size
+#end if
+'$idx_prefix'
+#if $input_type.input_type == "paired":
+    '$input_type.reads1' '$input_type.reads2'
+#elif $input_type.input_type == "interleaved":
+    '$input_type.reads'
+#else:
+    '$input_type.reads'
+#end if
+> '$output'
+    ]]></command>
+    <inputs>
+        <expand macro="reference_source"/>
+        <conditional name="input_type">
+            <param name="input_type" type="select" label="Input reads type">
+                <option value="single">Single-end</option>
+                <option value="paired">Paired-end</option>
+                <option value="interleaved">Interleaved</option>
+            </param>
+            <when value="single">
+                <param name="reads" type="data" format="fastq,fastq.gz,fasta,fasta.gz" label="Reads"/>
+            </when>
+            <when value="paired">
+                <param name="reads1" type="data" format="fastq,fastq.gz,fasta,fasta.gz" label="Forward reads (first mate)"/>
+                <param name="reads2" type="data" format="fastq,fastq.gz,fasta,fasta.gz" label="Reverse reads (second mate)"/>
+            </when>
+            <when value="interleaved">
+                <param name="reads" type="data" format="fastq,fastq.gz,fasta,fasta.gz" label="Interleaved reads"/>
+            </when>
+        </conditional>
+        <param name="preset" type="select" display="radio" label="Preset" help="Choose the alignment preset. The default 'adap' works well for both short and long reads.">
+            <option value="adap" selected="true">adap — mixed short and long reads, optimized for short reads</option>
+            <option value="sr">sr — short-read alignment</option>
+            <option value="lr">lr — long-read alignment</option>
+        </param>
+        <param name="output_format" type="select" display="radio" label="Output format">
+            <option value="sam" selected="true">SAM</option>
+            <option value="paf">PAF</option>
+        </param>
+        <param name="read_group" type="text" label="SAM read group line" help="Format: @RG\tID:foo\tSM:bar. Use literal tab characters (as \\t)." optional="true">
+            <validator type="regex" message="Read group must start with @RG">^(@RG.*)?$</validator>
+        </param>
+        <param name="base_tag" type="select" label="Base alignment tag" help="Output an additional base alignment tag in SAM/PAF">
+            <option value="none" selected="true">None</option>
+            <option value="cs">cs — difference string</option>
+            <option value="ds">ds — DNA difference string</option>
+            <option value="MD">MD — SAM MD tag</option>
+        </param>
+        <param argument="-l" name="read_length_threshold" type="integer" min="1" optional="true" label="Read length threshold for short-read mode" help="In adaptive mode, treat reads shorter than NUM as short reads [325]"/>
+        <param argument="--meth" type="boolean" truevalue="--meth" falsevalue="" checked="false" label="Directional BS-seq mode" help="Map directional bisulfite sequencing reads. Requires a --meth index."/>
+        <param argument="--hic" type="boolean" truevalue="--hic" falsevalue="" checked="false" label="Hi-C mode" help="Equivalent to -5P (5'-end primary, skip pairing)"/>
+        <section name="sec_mapping" title="Mapping options" expanded="false">
+            <param argument="-k" name="min_seed_len" type="integer" min="1" optional="true" label="Minimum seed length" help="Minimum seed length [19]"/>
+            <param argument="-c" name="max_seed_occ" type="integer" min="0" optional="true" label="Maximum seed occurrence" help="Maximum seed occurrence [250]"/>
+            <param argument="-g" name="chain_gap" type="integer" min="0" optional="true" label="Chain extension gap" help="Stop chain extension if no minimizers within NUM bp [5000]"/>
+            <param argument="-w" name="bandwidth" type="integer" min="0" optional="true" label="Bandwidth" help="Bandwidth for initial chaining and base alignment [500]"/>
+            <param argument="-W" name="sec_bandwidth" type="integer" min="0" optional="true" label="Secondary chaining bandwidth" help="Bandwidth for secondary chaining through long gaps [20000]"/>
+            <param argument="-m" name="min_chain_score" type="integer" min="0" optional="true" label="Minimum chaining score" help="Minimum chaining score [25]"/>
+            <param argument="-p" name="min_sec_ratio" type="float" optional="true" label="Minimum secondary-to-primary ratio" help="Minimum secondary-to-primary score ratio [0.5]"/>
+            <param argument="-N" name="max_secondary" type="integer" min="0" optional="true" label="Maximum secondary alignments" help="Retain at most INT secondary alignments [101]"/>
+            <param argument="--chain-only" name="chain_only" type="boolean" truevalue="--chain-only" falsevalue="" checked="false" label="Chaining only" help="Perform chaining only without base alignment"/>
+            <param name="adap_override" type="select" label="Adaptive mode override" help="Force enable or disable the adaptive mode">
+                <option value="default" selected="true">Preset default</option>
+                <option value="yes">yes — force adaptive mode</option>
+                <option value="no">no — disable adaptive mode</option>
+            </param>
+            <param name="long_override" type="select" label="Long-read heuristic override" help="Force enable or disable the long-read heuristic">
+                <option value="default" selected="true">Preset default</option>
+                <option value="yes">yes — force long-read heuristic</option>
+                <option value="no">no — disable long-read heuristic</option>
+            </param>
+        </section>
+        <section name="sec_alignment" title="Alignment scoring" expanded="false">
+            <param argument="-A" name="match_score" type="integer" optional="true" label="Match score" help="Match score [2]"/>
+            <param argument="-B" name="mismatch_penalty" type="integer" optional="true" label="Mismatch penalty" help="Mismatch penalty [8]"/>
+            <param argument="-O" name="gap_open" type="text" optional="true" label="Gap open penalty" help="Dual gap open penalty [12,23]. Comma-separated for dual values (e.g. 12,23)."/>
+            <param argument="-E" name="gap_extend" type="text" optional="true" label="Gap extend penalty" help="Dual gap extension penalty [2,1]. Comma-separated for dual values (e.g. 2,1)."/>
+        </section>
+        <section name="sec_paired" title="Paired-end options" expanded="false">
+            <param argument="-P" name="skip_pairing" type="boolean" truevalue="-P" falsevalue="" checked="false" label="Skip pairing and mate rescue"/>
+            <param name="rescue" type="integer" min="0" optional="true" label="Mate rescue candidates" help="Mate rescue for up to INT candidates [10]"/>
+            <param name="pe_override" type="select" label="Paired-end mode override">
+                <option value="default" selected="true">Preset default</option>
+                <option value="yes">yes — force paired-end mode</option>
+                <option value="no">no — disable paired-end mode</option>
+            </param>
+            <param argument="-I" name="insert_size" type="text" optional="true" label="Insert size distribution" help="Mean, std dev, max, min of expected insert size. Comma-separated (e.g. 500,50,700,300)."/>
+        </section>
+        <section name="sec_output" title="Output options" expanded="false">
+            <param argument="-u" name="skip_unmapped" type="boolean" truevalue="-u" falsevalue="" checked="false" label="Skip unmapped reads" help="Don't output unmapped reads"/>
+            <param name="outn" type="integer" min="0" optional="true" label="Output secondary alignments" help="Output up to NUM secondary alignments [0]"/>
+            <param name="xa" type="integer" min="0" optional="true" label="XA tag threshold" help="Output XA tag if &gt;= NUM secondary hits above 80% of best [5]"/>
+            <param name="xa_ratio" type="float" min="0" max="1" optional="true" label="XA ratio" help="Secondary hit is considered for XA tag if score &gt; FLOAT * primary [0.8]"/>
+            <param argument="-y" name="copy_comments" type="boolean" truevalue="-y" falsevalue="" checked="false" label="Copy FASTA/Q comments" help="Copy FASTA/Q comments to output"/>
+            <param argument="-Y" name="soft_clip_supp" type="boolean" truevalue="-Y" falsevalue="" checked="false" label="Soft clip supplementary alignments" help="Use soft clipping for supplementary alignments in SAM output"/>
+            <param argument="-H" name="header_line" type="text" optional="true" label="SAM header line" help="Insert STR into the SAM header (if starts with @) or insert lines from file named STR"/>
+            <param argument="-5" name="five_prime_primary" type="boolean" truevalue="-5" falsevalue="" checked="false" label="5'-end primary alignment" help="Take alignment with smallest query position as primary"/>
+            <param argument="-K" name="batch_size" type="text" optional="true" label="Batch size" help="Process NUM1-NUM2 bp of query sequences in a batch [100m,1g]. Comma-separated (e.g. 100m,1g)."/>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="output" format="sam">
+            <change_format>
+                <when input="output_format" value="paf" format="paf"/>
+            </change_format>
+        </data>
+    </outputs>
+    <tests>
+        <!-- Test 1: paired-end SAM output, default adap preset -->
+        <test expect_num_outputs="1">
+            <conditional name="reference_source">
+                <param name="reference_source_selector" value="history"/>
+                <param name="fasta_ref" ftype="fasta.gz" value="chrM-human.fa.gz"/>
+            </conditional>
+            <conditional name="input_type">
+                <param name="input_type" value="paired"/>
+                <param name="reads1" ftype="fasta.gz" value="chrM-read_1.fa.gz"/>
+                <param name="reads2" ftype="fasta.gz" value="chrM-read_2.fa.gz"/>
+            </conditional>
+            <param name="preset" value="adap"/>
+            <param name="output_format" value="sam"/>
+            <output name="output" ftype="sam">
+                <assert_contents>
+                    <has_text text="@HD"/>
+                    <has_text text="@SQ"/>
+                    <has_text text="chrM"/>
+                    <has_n_lines n="10" delta="100"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 2: single-end with PAF output -->
+        <test expect_num_outputs="1">
+            <conditional name="reference_source">
+                <param name="reference_source_selector" value="history"/>
+                <param name="fasta_ref" ftype="fasta.gz" value="chrM-human.fa.gz"/>
+            </conditional>
+            <conditional name="input_type">
+                <param name="input_type" value="single"/>
+                <param name="reads" ftype="fasta.gz" value="chrM-read_1.fa.gz"/>
+            </conditional>
+            <param name="output_format" value="paf"/>
+            <output name="output" ftype="paf">
+                <assert_contents>
+                    <has_text text="chrM"/>
+                    <has_n_columns ncols="12"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 3: read group line -->
+        <test expect_num_outputs="1">
+            <conditional name="reference_source">
+                <param name="reference_source_selector" value="history"/>
+                <param name="fasta_ref" ftype="fasta.gz" value="chrM-human.fa.gz"/>
+            </conditional>
+            <conditional name="input_type">
+                <param name="input_type" value="paired"/>
+                <param name="reads1" ftype="fasta.gz" value="chrM-read_1.fa.gz"/>
+                <param name="reads2" ftype="fasta.gz" value="chrM-read_2.fa.gz"/>
+            </conditional>
+            <param name="read_group" value="@RG\tID:foo\tSM:bar"/>
+            <output name="output" ftype="sam">
+                <assert_contents>
+                    <has_text text="@RG"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 4: short-read preset -->
+        <test expect_num_outputs="1">
+            <conditional name="reference_source">
+                <param name="reference_source_selector" value="history"/>
+                <param name="fasta_ref" ftype="fasta.gz" value="chrM-human.fa.gz"/>
+            </conditional>
+            <conditional name="input_type">
+                <param name="input_type" value="paired"/>
+                <param name="reads1" ftype="fasta.gz" value="chrM-read_1.fa.gz"/>
+                <param name="reads2" ftype="fasta.gz" value="chrM-read_2.fa.gz"/>
+            </conditional>
+            <param name="preset" value="sr"/>
+            <output name="output" ftype="sam">
+                <assert_contents>
+                    <has_text text="@HD"/>
+                    <has_text text="chrM"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 5: long-read preset -->
+        <test expect_num_outputs="1">
+            <conditional name="reference_source">
+                <param name="reference_source_selector" value="history"/>
+                <param name="fasta_ref" ftype="fasta.gz" value="chrM-human.fa.gz"/>
+            </conditional>
+            <conditional name="input_type">
+                <param name="input_type" value="paired"/>
+                <param name="reads1" ftype="fasta.gz" value="chrM-read_1.fa.gz"/>
+                <param name="reads2" ftype="fasta.gz" value="chrM-read_2.fa.gz"/>
+            </conditional>
+            <param name="preset" value="lr"/>
+            <output name="output" ftype="sam">
+                <assert_contents>
+                    <has_text text="@HD"/>
+                    <has_text text="chrM"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 6: interleaved input -->
+        <test expect_num_outputs="1">
+            <conditional name="reference_source">
+                <param name="reference_source_selector" value="history"/>
+                <param name="fasta_ref" ftype="fasta.gz" value="chrM-human.fa.gz"/>
+            </conditional>
+            <conditional name="input_type">
+                <param name="input_type" value="interleaved"/>
+                <param name="reads" ftype="fasta.gz" value="chrM-read_1.fa.gz"/>
+            </conditional>
+            <output name="output" ftype="sam">
+                <assert_contents>
+                    <has_text text="chrM"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Test 7: base tag cs -->
+        <test expect_num_outputs="1">
+            <conditional name="reference_source">
+                <param name="reference_source_selector" value="history"/>
+                <param name="fasta_ref" ftype="fasta.gz" value="chrM-human.fa.gz"/>
+            </conditional>
+            <conditional name="input_type">
+                <param name="input_type" value="single"/>
+                <param name="reads" ftype="fasta.gz" value="chrM-read_1.fa.gz"/>
+            </conditional>
+            <param name="base_tag" value="cs"/>
+            <output name="output" ftype="sam">
+                <assert_contents>
+                    <has_text text="cs:Z:"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# minibwa map
+
+Minibwa aligns short reads (and accurate long reads) against a reference genome. It is the successor to BWA-MEM, combining BWA-MEM variable-length seeding with minimap2 chaining and SIMD base alignment. Minibwa is approximately 4× faster than BWA-MEM and 2× faster than BWA-MEM2 at comparable accuracy.
+
+## Intended use cases
+
+- Short-read alignment for variant calling
+- Accurate long-read alignment (for noisy long reads, use minimap2 instead)
+- Directional bisulfite sequencing (BS-seq) alignment
+- Hi-C read alignment
+
+## Presets
+
+- **adap** (default) — Mixed short and long reads, optimized for short reads. Equivalent to `-x sr --adap=yes`.
+- **sr** — Short-read alignment. May give fragmented alignment for long reads.
+- **lr** — Long-read alignment. May miss highly repetitive alignments for typical short reads.
+
+## Output formats
+
+- **SAM** (default) — Sequence Alignment/Map format
+- **PAF** — Pairwise mApping Format, TAB-delimited with at least 12 columns
+
+## Limitations
+
+- Minibwa does not work with noisy long reads or spliced RNA-seq reads.
+- Minibwa does not support undirectional bisulfite sequencing data.
+- Minibwa does not recognize alternate haplotypes.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citation"/>
+</tool>
