@@ -2,11 +2,6 @@
     <token name="@TOOL_VERSION@">0.1</token>
     <token name="@VERSION_SUFFIX@">0</token>
     <token name="@PROFILE@">25.0</token>
-    <xml name="bio_tools">
-        <xrefs>
-            <xref type="bio.tools">sdust</xref>
-        </xrefs>
-    </xml>
     <xml name="requirements">
         <requirements>
             <requirement type="package" version="@TOOL_VERSION@">sdust</requirement>
