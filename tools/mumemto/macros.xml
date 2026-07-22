@@ -13,12 +13,6 @@
             <yield/>
         </requirements>
     </xml>
-    <xml name="stdio">
-        <stdio>
-            <exit_code range="1:"/>
-            <exit_code range=":-1"/>
-        </stdio>
-    </xml>
     <xml name="version_command">
         <version_command>mumemto --version 2&gt;&amp;1</version_command>
     </xml>

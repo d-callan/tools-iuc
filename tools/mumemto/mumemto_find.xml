@@ -5,7 +5,6 @@
     </macros>
     <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="stdio"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 ## Symlink input FASTA files with .fa extension so mumemto recognizes them
@@ -21,36 +20,32 @@ mumemto
 #if $options.max_total:
   -F $options.max_total
 #end if
-#if $options.binary_output:
-  -b
-#end if
+$options.binary_output
 #if $options.merge_mode == 'string':
   -M
 #elif $options.merge_mode == 'anchor':
   -Mn
 #end if
-#if $options.threads:
-  -t $options.threads
-#end if
+-t \$GALAXY_SLOTS
 #for $i in range(len($input_fastas)):
   input${i}.fa
 #end for
 &&
 ## Rename outputs to Galaxy-expected names
 #if $options.binary_output:
-  cp 'output.bumbl' '$mums_output' &&
+  mv 'output.bumbl' '$mums_output' &&
 #elif $options.max_per_sequence > 1:
-  cp 'output.mems' '$mums_output' &&
+  mv 'output.mems' '$mums_output' &&
 #else:
-  cp 'output.mums' '$mums_output' &&
+  mv 'output.mums' '$mums_output' &&
 #end if
-cp 'output.lengths' '$lengths_output'
+mv 'output.lengths' '$lengths_output'
 #if $options.merge_mode == 'string':
-  && cp 'output.thresh' '$thresh_output'
-  && cp 'output.thresh_rev' '$thresh_rev_output'
+  && mv 'output.thresh' '$thresh_output'
+  && mv 'output.thresh_rev' '$thresh_rev_output'
 #end if
 #if $options.merge_mode == 'anchor':
-  && cp 'output.athresh' '$athresh_output'
+  && mv 'output.athresh' '$athresh_output'
 #end if
     ]]></command>
     <inputs>
@@ -65,7 +60,6 @@ cp 'output.lengths' '$lengths_output'
                 <option value="string">String-based merging (-M)</option>
                 <option value="anchor">Anchor-based merging (-Mn)</option>
             </param>
-            <param argument="-t" name="threads" type="integer" optional="true" label="Number of threads" help="Default: number of available CPU cores"/>
         </section>
     </inputs>
     <outputs>
@@ -74,14 +68,14 @@ cp 'output.lengths' '$lengths_output'
                 <when input="options.binary_output" value="-b" format="binary"/>
             </change_format>
         </data>
-        <data name="lengths_output" format="tabular"/>
-        <data name="thresh_output" format="binary">
+        <data name="lengths_output" format="tabular" label="${tool.name} lengths on ${on_string}"/>
+        <data name="thresh_output" format="binary" label="${tool.name} thresh on ${on_string}">
             <filter>options.merge_mode == 'string'</filter>
         </data>
-        <data name="thresh_rev_output" format="binary">
+        <data name="thresh_rev_output" format="binary" label="${tool.name} thresh_rev on ${on_string}">
             <filter>options.merge_mode == 'string'</filter>
         </data>
-        <data name="athresh_output" format="binary">
+        <data name="athresh_output" format="binary" label="${tool.name} athresh on ${on_string}">
             <filter>options.merge_mode == 'anchor'</filter>
         </data>
     </outputs>
@@ -95,12 +89,16 @@ cp 'output.lengths' '$lengths_output'
             </section>
             <output name="mums_output" ftype="txt">
                 <assert_contents>
-                    <has_text text="ACGT"/>
+                    <has_n_columns n="3"/>
+                    <has_text text="0,0,0"/>
+                    <has_text text="+"/>
                 </assert_contents>
             </output>
             <output name="lengths_output" ftype="tabular">
                 <assert_contents>
-                    <has_text text="genome"/>
+                    <has_n_lines n="3"/>
+                    <has_text text="genome1.fa"/>
+                    <has_text text="624"/>
                 </assert_contents>
             </output>
         </test>
@@ -114,7 +112,15 @@ cp 'output.lengths' '$lengths_output'
             </section>
             <output name="mums_output" ftype="txt">
                 <assert_contents>
-                    <has_text text="ACGT"/>
+                    <has_n_columns n="3"/>
+                    <has_text text="0,0,0"/>
+                    <has_text text="+"/>
+                </assert_contents>
+            </output>
+            <output name="lengths_output" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="3"/>
+                    <has_text text="624"/>
                 </assert_contents>
             </output>
         </test>
@@ -127,7 +133,14 @@ cp 'output.lengths' '$lengths_output'
             </section>
             <output name="mums_output" ftype="txt">
                 <assert_contents>
-                    <has_text text="ACGT"/>
+                    <has_text text="+"/>
+                    <has_text text=","/>
+                </assert_contents>
+            </output>
+            <output name="lengths_output" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="3"/>
+                    <has_text text="624"/>
                 </assert_contents>
             </output>
         </test>
@@ -139,7 +152,12 @@ cp 'output.lengths' '$lengths_output'
                 <param name="binary_output" value="true"/>
             </section>
             <output name="mums_output" ftype="binary"/>
-            <output name="lengths_output" ftype="tabular"/>
+            <output name="lengths_output" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="3"/>
+                    <has_text text="624"/>
+                </assert_contents>
+            </output>
         </test>
     </tests>
     <help format="markdown"><![CDATA[

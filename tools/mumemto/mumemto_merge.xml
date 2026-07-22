@@ -5,7 +5,6 @@
     </macros>
     <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="stdio"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 ## Symlink each partition's files to matching prefixes so merge can find associated files
@@ -31,7 +30,7 @@ mumemto merge
 #end for
 -o 'merged.mums'
 &&
-cp 'merged.mums' '$merged_mums'
+mv 'merged.mums' '$merged_mums'
     ]]></command>
     <inputs>
         <repeat name="partitions" title="Partitions" min="2" help="Two or more partition outputs from mumemto find runs with merging enabled (-M or -Mn)">
@@ -46,6 +45,22 @@ cp 'merged.mums' '$merged_mums'
         <data name="merged_mums" format="txt"/>
     </outputs>
     <tests>
+        <test expect_num_outputs="1">
+            <repeat name="partitions">
+                <param name="mums_file" value="merge_part1.mums" ftype="txt"/>
+                <param name="lengths_file" value="merge_part1.lengths" ftype="tabular"/>
+            </repeat>
+            <repeat name="partitions">
+                <param name="mums_file" value="merge_part2.mums" ftype="txt"/>
+                <param name="lengths_file" value="merge_part2.lengths" ftype="tabular"/>
+            </repeat>
+            <output name="merged_mums" ftype="txt">
+                <assert_contents>
+                    <has_n_columns n="3"/>
+                    <has_text text="+"/>
+                </assert_contents>
+            </output>
+        </test>
     </tests>
     <help format="markdown"><![CDATA[
 # mumemto merge
