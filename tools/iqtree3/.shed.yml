@@ -1,0 +1,14 @@
+---
+categories:
+- Phylogenetics
+description: IQ-TREE 3 - efficient phylogenomic inference software using complex evolutionary models
+homepage_url: https://iqtree.github.io/
+long_description: |
+  IQ-TREE 3 is software for phylogenomic inference using maximum likelihood and complex
+  evolutionary models. It features efficient tree reconstruction, ModelFinder for automatic
+  model selection, ultrafast bootstrap approximation, partitioned analysis for multi-gene
+  datasets, and integrated CMAPLE for pathogen data analysis.
+name: iqtree3
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/iqtree3
+type: unrestricted

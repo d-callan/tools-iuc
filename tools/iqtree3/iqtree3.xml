@@ -1,0 +1,287 @@
+<tool id="iqtree3" name="IQ-TREE 3" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Efficient phylogenomic inference by maximum likelihood</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Set up prefix for output files
+#set $prefix = 'iqtree_output'
+ln -s '$alignment' ${prefix}.aln &&
+
+iqtree
+-s ${prefix}.aln
+@THREADS@
+-pre ${prefix}
+#if $sec_general.sequence_type and str($sec_general.sequence_type) != ""
+  -st $sec_general.sequence_type
+#end if
+@MODEL_TOKEN@
+@PARTITION_TOKEN@
+@BOOTSTRAP_TOKEN@
+@TREE_SEARCH_TOKEN@
+@EXTRA_TREE_TOKEN@
+@GENERAL_TOKEN@
+#if $sec_general.pathogen
+  --pathogen
+#end if
+#if $sec_general.pathogen_force
+  --pathogen-force
+#end if
+#if $sec_general.tree_search_type and str($sec_general.tree_search_type) != ""
+  --tree-search $sec_general.tree_search_type
+#end if
+#if $sec_general.alrt_pathogen
+  --alrt $sec_general.alrt_pathogen
+#end if
+#if $sec_general.sprta
+  --sprta
+#end if
+#if $sec_general.asr
+  -asr
+#end if
+#if $sec_general.alninfo
+  -alninfo
+#end if
+#if $sec_general.wsl
+  -wsl
+#end if
+#if $sec_general.wsr
+  -wsr
+#end if
+#if $sec_general.czb
+  -czb
+#end if
+#if $sec_general.blmin
+  -blmin $sec_general.blmin
+#end if
+#if $sec_general.blmax
+  -blmax $sec_general.blmax
+#end if
+#if $sec_general.me
+  -me $sec_general.me
+#end if
+    ]]></command>
+    <inputs>
+        <expand macro="alignment_input"/>
+        <section name="sec_general" title="General Options" expanded="true">
+            <expand macro="sequence_type"/>
+            <param name="pathogen" type="boolean" truevalue="--pathogen" falsevalue="" checked="false" label="Use CMAPLE pathogen tree search" help="Apply CMAPLE tree search if sequence divergence is low, otherwise use IQ-TREE algorithm"/>
+            <param name="pathogen_force" type="boolean" truevalue="--pathogen-force" falsevalue="" checked="false" label="Force CMAPLE pathogen tree search" help="Apply CMAPLE tree search regardless of sequence divergence"/>
+            <param name="tree_search_type" type="select" label="Tree search type (CMAPLE)" optional="true" help="Only effective with pathogen mode">
+                <option value="FAST">FAST - placement only, no SPR moves</option>
+                <option value="NORMAL">NORMAL - SPR moves at newly-added nodes only</option>
+                <option value="EXHAUSTIVE">EXHAUSTIVE - SPR moves at all nodes</option>
+            </param>
+            <param name="alrt_pathogen" type="integer" min="1" optional="true" label="SH-aLRT replicates (pathogen mode)" help="Number of replicates for SH-aLRT in CMAPLE pathogen mode"/>
+            <param name="sprta" type="boolean" truevalue="--sprta" falsevalue="" checked="false" label="Compute SPRTA branch supports" help="Compute SPRTA branch supports (pathogen mode)"/>
+            <param name="asr" type="boolean" truevalue="-asr" falsevalue="" checked="false" label="Ancestral sequence reconstruction" help="Write ancestral sequences for all tree nodes to .state file"/>
+            <param name="alninfo" type="boolean" truevalue="-alninfo" falsevalue="" checked="false" label="Print alignment site statistics" help="Write alignment site statistics to .alninfo file"/>
+            <param name="wsl" type="boolean" truevalue="-wsl" falsevalue="" checked="false" label="Write site log-likelihoods" help="Write site log-likelihoods to .sitelh file"/>
+            <param name="wsr" type="boolean" truevalue="-wsr" falsevalue="" checked="false" label="Write per-site rates" help="Write per-site rates to .rate file"/>
+            <param name="czb" type="boolean" truevalue="-czb" falsevalue="" checked="false" label="Collapse near-zero branches" help="Collapse near-zero branches so the final tree may be multifurcating"/>
+            <param name="blmin" type="float" min="0" optional="true" label="Minimum branch length" help="DEFAULT: the smaller of 0.000001 and 0.1/alignment_length"/>
+            <param name="blmax" type="float" optional="true" label="Maximum branch length" help="DEFAULT: 10"/>
+            <param name="me" type="float" optional="true" label="Log-likelihood epsilon" help="Epsilon for final model parameter estimation. DEFAULT: 0.01 (0.05 with -fast)"/>
+            <expand macro="general_options"/>
+        </section>
+        <section name="sec_model" title="Substitution Model" expanded="false">
+            <expand macro="model_selection"/>
+            <param name="mset" type="text" optional="true" label="Restrict model set" help="Comma-separated list of base models (e.g. WAG,LG,JTT) or program name (raxml, phyml, mrbayes)"/>
+            <param name="msub" type="select" optional="true" label="Restrict AA model source">
+                <option value="nuclear">nuclear</option>
+                <option value="mitochondrial">mitochondrial</option>
+                <option value="chloroplast">chloroplast</option>
+                <option value="viral">viral</option>
+            </param>
+            <param name="mrate" type="text" optional="true" label="Rate heterogeneity types" help="Comma-separated list (e.g. E,I,G,I+G or E,I,G,I+G,R)"/>
+            <param name="mfreq" type="text" optional="true" label="Frequency types" help="Comma-separated list of frequency types for model selection"/>
+            <param name="cmin" type="integer" min="2" optional="true" label="Min FreeRate categories" help="Minimum number of categories for FreeRate model. DEFAULT: 2"/>
+            <param name="cmax" type="integer" optional="true" label="Max FreeRate categories" help="Maximum number of categories for FreeRate model. DEFAULT: 10"/>
+            <param name="merit" type="select" optional="true" label="Optimality criterion">
+                <option value="AIC">AIC</option>
+                <option value="AICc">AICc</option>
+                <option value="BIC">BIC</option>
+            </param>
+            <param name="mtree" type="boolean" truevalue="-mtree" falsevalue="" checked="false" label="Full tree search for each model" help="Turn on full tree search for each model considered. More accurate but slower"/>
+            <param name="rcluster" type="integer" optional="true" label="Relaxed clustering percentage" help="Percentage for relaxed clustering algorithm (e.g. 10 for top 10%)"/>
+            <param name="rclusterf" type="integer" optional="true" label="Fast relaxed clustering percentage" help="Percentage for fast relaxed clustering algorithm"/>
+        </section>
+        <section name="sec_partition" title="Partition Model" expanded="false">
+            <param name="partition_file" type="data" format="nexus,txt" optional="true" label="Partition file" help="Partition file in NEXUS or RAxML-style format"/>
+            <param name="partition_type" type="select" label="Partition model type" help="-q: edge-equal, -spp: edge-proportional, -sp: edge-unlinked">
+                <option value="-q">Edge-equal (all partitions share branch lengths)</option>
+                <option value="-spp">Edge-proportional (partitions have different speeds)</option>
+                <option value="-sp">Edge-unlinked (each partition has own branch lengths)</option>
+            </param>
+        </section>
+        <section name="sec_bootstrap" title="Branch Support" expanded="false">
+            <expand macro="bootstrap_options"/>
+            <param name="bsam" type="select" optional="true" label="Bootstrap resampling strategy" help="Resampling strategy for partitioned analysis">
+                <option value="">Default (resample sites within partitions)</option>
+                <option value="GENE">GENE (resample partitions)</option>
+                <option value="GENESITE">GENESITE (resample partitions then sites)</option>
+            </param>
+            <param name="abayes" type="boolean" truevalue="-abayes" falsevalue="" checked="false" label="Approximate Bayes test" help="Perform approximate Bayes test for branch support"/>
+            <param name="lbp" type="integer" min="1000" optional="true" label="Local bootstrap probability replicates" help="Number of replicates (&gt;=1000) for fast local bootstrap probability method"/>
+        </section>
+        <section name="sec_treesearch" title="Tree Search Parameters" expanded="false">
+            <expand macro="tree_search_options"/>
+        </section>
+        <section name="sec_extratree" title="Tree Input Options" expanded="false">
+            <param name="starting_tree" type="data" format="newick" optional="true" label="Starting tree" help="File containing starting tree for tree search"/>
+            <param name="fixed_tree" type="data" format="newick" optional="true" label="Fixed user tree" help="Fix user tree - no tree search is performed, only log-likelihood is computed"/>
+            <param name="constraint_tree" type="data" format="newick" optional="true" label="Constraint tree" help="Topological constraint tree file in NEWICK format. Can be multifurcating and need not include all taxa"/>
+            <param name="outgroup" type="text" optional="true" label="Outgroup taxon" help="Specify an outgroup taxon name to root the tree"/>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="treefile" format="newick" from_work_dir="iqtree_output.treefile"/>
+        <data name="log" format="txt" from_work_dir="iqtree_output.log"/>
+        <data name="iqtree_report" format="txt" from_work_dir="iqtree_output.iqtree"/>
+        <data name="contree" format="newick" from_work_dir="iqtree_output.contree">
+            <filter>sec_bootstrap.b</filter>
+        </data>
+        <data name="ufboot_trees" format="newick" from_work_dir="iqtree_output.ufboot">
+            <filter>sec_bootstrap.bb</filter>
+        </data>
+        <data name="state" format="tabular" from_work_dir="iqtree_output.state">
+            <filter>sec_general.asr</filter>
+        </data>
+        <data name="alninfo" format="tabular" from_work_dir="iqtree_output.alninfo">
+            <filter>sec_general.alninfo</filter>
+        </data>
+        <data name="sitelh" format="tabular" from_work_dir="iqtree_output.sitelh">
+            <filter>sec_general.wsl</filter>
+        </data>
+        <data name="rate" format="tabular" from_work_dir="iqtree_output.rate">
+            <filter>sec_general.wsr</filter>
+        </data>
+        <data name="nex" format="nexus" from_work_dir="iqtree_output.nex">
+            <filter>sec_general.sprta</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="3">
+            <param name="alignment" ftype="fasta" value="test_alignment.fasta"/>
+            <section name="sec_general">
+                <param name="sequence_type" value="DNA"/>
+                <param name="seed" value="12345"/>
+            </section>
+            <section name="sec_model">
+                <param name="model_spec" value="custom"/>
+                <param name="custom_model" value="GTR+G"/>
+            </section>
+            <output name="treefile" ftype="newick">
+                <assert_contents>
+                    <has_text text=";"/>
+                    <has_text text="seq1"/>
+                    <has_text text="seq8"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="txt">
+                <assert_contents>
+                    <has_text text="IQ-TREE"/>
+                    <has_text text="BEST SCORE FOUND"/>
+                </assert_contents>
+            </output>
+            <output name="iqtree_report" ftype="txt">
+                <assert_contents>
+                    <has_text text="Log-likelihood"/>
+                    <has_text text="BEST SCORE"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="4">
+            <param name="alignment" ftype="fasta" value="test_alignment.fasta"/>
+            <section name="sec_general">
+                <param name="sequence_type" value="DNA"/>
+                <param name="seed" value="12345"/>
+            </section>
+            <section name="sec_model">
+                <param name="model_spec" value="custom"/>
+                <param name="custom_model" value="GTR+G"/>
+            </section>
+            <section name="sec_bootstrap">
+                <param name="bb" value="1000"/>
+                <param name="alrt" value="1000"/>
+            </section>
+            <output name="treefile" ftype="newick">
+                <assert_contents>
+                    <has_text text=";"/>
+                    <has_text text="seq1"/>
+                    <has_text text="seq8"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="txt">
+                <assert_contents>
+                    <has_text text="IQ-TREE"/>
+                    <has_text text="BEST SCORE FOUND"/>
+                </assert_contents>
+            </output>
+            <output name="iqtree_report" ftype="txt">
+                <assert_contents>
+                    <has_text text="Log-likelihood"/>
+                    <has_text text="BEST SCORE"/>
+                </assert_contents>
+            </output>
+            <output name="ufboot_trees" ftype="newick">
+                <assert_contents>
+                    <has_text text=";"/>
+                    <has_text text="seq1"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# IQ-TREE 3: Phylogenomic Inference
+
+IQ-TREE 3 is software for phylogenomic inference using maximum likelihood and complex evolutionary models. It can be used for:
+
+- **Tree reconstruction** under maximum likelihood
+- **Model selection** via ModelFinder (automatically finding the best-fit substitution model)
+- **Branch support** via ultrafast bootstrap (UFBoot), SH-aLRT, nonparametric bootstrap, and more
+- **Partitioned analysis** for multi-gene phylogenomic datasets
+- **Pathogen analysis** via the integrated CMAPLE algorithm for low-divergence sequences
+- **Ancestral sequence reconstruction**
+
+## Key features
+
+### Model selection
+IQ-TREE's ModelFinder automatically selects the best-fit substitution model for your data. Use **MFP** (ModelFinder Plus) for the recommended extended model selection that includes FreeRate models, or **TEST** for standard model selection.
+
+### Branch support
+- **Ultrafast bootstrap (UFBoot)**: `-bb` with >=1000 replicates. Fast approximation of bootstrap support.
+- **SH-aLRT**: `-alrt` with >=1000 replicates. Fast single-branch test.
+- **Nonparametric bootstrap**: `-b` with >=100 replicates. Standard but slower bootstrap.
+- These can be combined in a single run.
+
+### Partition models
+For multi-gene datasets, provide a partition file (NEXUS or RAxML format) and choose the partition model type:
+- **Edge-equal** (`-q`): all partitions share the same branch lengths
+- **Edge-proportional** (`-spp`): partitions have different evolutionary speeds
+- **Edge-unlinked** (`-sp`): each partition has its own branch lengths
+
+### Pathogen mode
+For pathogen data (e.g., SARS-CoV-2), IQ-TREE 3 integrates CMAPLE for efficient tree search on low-divergence alignments. Enable with `--pathogen` (auto-detect) or `--pathogen-force` (always use CMAPLE).
+
+## Output files
+
+- **`.treefile`**: Best ML tree in NEWICK format
+- **`.log`**: Full log of the analysis
+- **`.iqtree`**: Human-readable report with full results
+- **`.contree`**: Consensus tree (if nonparametric bootstrap used)
+- **`.ufboot`**: Bootstrap trees (if UFBoot used)
+- **`.state`**: Ancestral sequences (if `-asr` used)
+- **`.alninfo`**: Alignment site statistics (if `-alninfo` used)
+- **`.sitelh`**: Site log-likelihoods (if `-wsl` used)
+- **`.rate`**: Per-site rates (if `-wsr` used)
+
+## Documentation
+
+Full documentation is available at the [IQ-TREE website](https://iqtree.github.io/doc/).
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
