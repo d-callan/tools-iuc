@@ -172,7 +172,13 @@ minibwa map
             <option value="sam" selected="true">SAM</option>
             <option value="paf">PAF</option>
         </param>
-        <param name="read_group" type="text" label="SAM read group line" help="Format: @RG\tID:foo\tSM:bar. Use literal tab characters (as \\t)." optional="true" sanitizer="none">
+        <param name="read_group" type="text" label="SAM read group line" help="Format: @RG\tID:foo\tSM:bar. Use literal tab characters (as \\t)." optional="true">
+            <sanitizer>
+                <valid initial="string.printable">
+                    <add value="\t"/>
+                </valid>
+                <mapping initial="none"/>
+            </sanitizer>
             <validator type="regex" message="Read group must start with @RG">^(@RG.*)?$</validator>
         </param>
         <param name="base_tag" type="select" label="Base alignment tag" help="Output an additional base alignment tag in SAM/PAF">
