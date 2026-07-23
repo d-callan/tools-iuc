@@ -159,10 +159,5 @@ evidence qualification and allele resolution.
 - `PARTIAL_OR_DIVERGENT` — incomplete or divergent mapping
 - `MIXED_OR_MOSAIC` — discontinuous or threshold-sensitive evidence
 - `NOT_DETECTED` — insufficient evidence
-
-**Attribution**
-
-GeneFíor was developed by Nicholas J. Dimonaco and Katie Lawther. See
-https://github.com/NickJD/GeneFior for source and documentation.
     ]]></token>
 </macros>

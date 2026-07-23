@@ -16,19 +16,18 @@ mkdir -p input_dir output_dir &&
 
 GeneFior-Combine
     -i input_dir
+    --output output_dir
 
     #if $samples_file:
         --samples-file '$samples_file'
     #end if
 
-    --output output_dir
-
     $verbose
 
 && cd output_dir
-&& det=\$(find . -name '*_combined_detection_matrix.tsv' | head -1) && mv "\$det" '$combined_detection_matrix'
-&& dt=\$(find . -name '*_combined_detection_matrix_tools.tsv' | head -1) && mv "\$dt" '$combined_detection_matrix_tools'
-&& evi=\$(find . -name '*_combined_evidence_matrix.tsv' | head -1) && mv "\$evi" '$combined_evidence_matrix'
+&& det=\$(find . -name '*_combined_detection_matrix.tsv' | head -1) && if [ -n "\$det" ]; then mv "\$det" '$combined_detection_matrix'; fi
+&& dt=\$(find . -name '*_combined_detection_matrix_tools.tsv' | head -1) && if [ -n "\$dt" ]; then mv "\$dt" '$combined_detection_matrix_tools'; fi
+&& evi=\$(find . -name '*_combined_evidence_matrix.tsv' | head -1) && if [ -n "\$evi" ]; then mv "\$evi" '$combined_evidence_matrix'; fi
     ]]></command>
     <inputs>
         <param name="detection_matrices" type="data_collection" collection_type="list" format="tabular" label="Per-sample detection matrices" help="A list collection of *_detection_matrix.tsv files, one per sample"/>

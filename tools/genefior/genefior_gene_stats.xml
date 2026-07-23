@@ -3,7 +3,9 @@
     <macros>
         <import>macros.xml</import>
     </macros>
-    <expand macro="requirements"/>
+    <expand macro="requirements">
+        <requirement type="package" version="2.1.13">diamond</requirement>
+    </expand>
     <expand macro="stdio"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
@@ -73,7 +75,7 @@ GeneFior-gene-stats
     $report_fasta
     --read-selection '$read_selection'
 
-&& cd output_dir && zip -r '$results_archive' . && cd ..
+&& cd output_dir && tar -czf '$results_archive' . && cd ..
     ]]></command>
     <inputs>
         <section name="sec_raw_outputs" expanded="true" title="GeneFíor Results (Raw Outputs)">
@@ -126,7 +128,7 @@ GeneFior-gene-stats
         </param>
     </inputs>
     <outputs>
-        <data name="results_archive" format="zip" label="${tool.name} results archive on ${on_string}"/>
+        <data name="results_archive" format="tar.gz" label="${tool.name} results archive on ${on_string}"/>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
@@ -138,7 +140,7 @@ GeneFior-gene-stats
             <param name="genes" value="resfinder_gene_1"/>
             <param name="databases" value="user-provided-db"/>
             <param name="tools" value="diamond"/>
-            <output name="results_archive" ftype="zip">
+            <output name="results_archive" ftype="tar.gz">
                 <assert_contents>
                     <has_size value="100" delta="100000"/>
                 </assert_contents>

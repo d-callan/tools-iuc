@@ -3,11 +3,28 @@
     <macros>
         <import>macros.xml</import>
     </macros>
-    <expand macro="requirements"/>
+    <expand macro="requirements">
+        <requirement type="package" version="2.1.13">diamond</requirement>
+        <requirement type="package" version="2.5.4">bowtie2</requirement>
+        <requirement type="package" version="0.7.18">bwa</requirement>
+        <requirement type="package" version="2.30">minimap2</requirement>
+        <requirement type="package" version="1.4">seqtk</requirement>
+        <requirement type="package" version="2.8">pigz</requirement>
+    </expand>
     <expand macro="stdio"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 mkdir -p output_dir &&
+
+#if 'user-provided' in $databases and str($user_db_path):
+    mkdir -p user_db_dir/diamond user_db_dir/blast_dna user_db_dir/blast_aa user_db_dir/bowtie2 user_db_dir/bwa user_db_dir/minimap2 &&
+    diamond makedb --in '$user_db_aa' --db user_db_dir/diamond/all_aa_diamonddb.dmnd --threads \${GALAXY_SLOTS:-4} &&
+    makeblastdb -in '$user_db_dna' -dbtype nucl -out user_db_dir/blast_dna/all_blastdb -parse_seqids &&
+    makeblastdb -in '$user_db_aa' -dbtype prot -out user_db_dir/blast_aa/all_aa_blastdb -parse_seqids &&
+    bowtie2-build --threads \${GALAXY_SLOTS:-4} '$user_db_dna' user_db_dir/bowtie2/all_bowtie2db &&
+    bwa index -p user_db_dir/bwa/all_bwadb '$user_db_dna' &&
+    minimap2 -d user_db_dir/minimap2/all_minimap2db '$user_db_dna' &&
+#end if
 
 #if $sequence_type == 'Paired-FASTQ':
     #set $input_str = $input + ',' + $input_r2
@@ -28,7 +45,7 @@ AMRfior
     --databases #echo ' '.join($databases)#
 
     #if 'user-provided' in $databases and str($user_db_path):
-        --user-db-path '$user_db_path'
+        --user-db-path user_db_dir
     #end if
 
     #if str($sec_thresholds.report_fasta):
@@ -75,14 +92,14 @@ AMRfior
     $sec_advanced.verbose
 
 && cd output_dir
-&& det=\$(find . -name '*_detection_matrix.tsv' | head -1) && mv "\$det" '$detection_matrix'
-&& evi=\$(find . -name '*_evidence_matrix.tsv' | head -1) && mv "\$evi" '$evidence_matrix'
-&& evs=\$(find . -name '*_evidence_summary.tsv' | head -1) && mv "\$evs" '$evidence_summary'
-&& all=\$(find . -name '*_allele_resolution.tsv' | head -1) && mv "\$all" '$allele_resolution'
+&& det=\$(find . -name '*_detection_matrix.tsv' ! -name '*combined*' | head -1) && if [ -n "\$det" ]; then mv "\$det" '$detection_matrix'; fi
+&& evi=\$(find . -name '*_evidence_matrix.tsv' ! -name '*combined*' | head -1) && if [ -n "\$evi" ]; then mv "\$evi" '$evidence_matrix'; fi
+&& evs=\$(find . -name '*_evidence_summary.tsv' | head -1) && if [ -n "\$evs" ]; then mv "\$evs" '$evidence_summary'; fi
+&& all=\$(find . -name '*_allele_resolution.tsv' | head -1) && if [ -n "\$all" ]; then mv "\$all" '$allele_resolution'; fi
 #if str($sec_thresholds.report_fasta):
-    && rep=\$(find . -name '*_report.fasta' | head -1) && mv "\$rep" '$report_fasta'
+    && rep=\$(find . -name '*_report.fasta' | head -1) && if [ -n "\$rep" ]; then mv "\$rep" '$report_fasta'; fi
 #end if
-&& cd .. && zip -r '$results_archive' output_dir
+&& cd .. && tar -czf '$results_archive' output_dir
     ]]></command>
     <inputs>
         <param name="input" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Input sequences" help="FASTA or FASTQ file (.gz accepted). For Paired-FASTQ, provide R1 here"/>
@@ -103,6 +120,8 @@ AMRfior
             <option value="user-provided">User-provided</option>
         </param>
         <param name="user_db_path" type="text" value="" label="User-provided database path" help="Required when 'user-provided' is selected. Path to a database directory built with build_database.sh"/>
+        <param name="user_db_dna" type="data" format="fasta" optional="true" label="User-provided DB DNA FASTA" help="DNA sequences for the user-provided database (when 'user-provided' is selected)"/>
+        <param name="user_db_aa" type="data" format="fasta" optional="true" label="User-provided DB AA FASTA" help="Amino acid sequences for the user-provided database (when 'user-provided' is selected)"/>
         <expand macro="tools_select"/>
         <section name="sec_thresholds" expanded="false" title="Detection Thresholds">
             <expand macro="threshold_params"/>
@@ -119,13 +138,16 @@ AMRfior
         <data name="report_fasta" format="fasta" label="${tool.name} report FASTA on ${on_string}">
             <filter>sec_thresholds['report_fasta']</filter>
         </data>
-        <data name="results_archive" format="zip" label="${tool.name} results archive on ${on_string}"/>
+        <data name="results_archive" format="tar.gz" label="${tool.name} results archive on ${on_string}"/>
     </outputs>
     <tests>
         <test expect_num_outputs="5">
             <param name="input" value="sample_single.fasta" ftype="fasta"/>
             <param name="sequence_type" value="Single-FASTA"/>
-            <param name="databases" value="resfinder,card"/>
+            <param name="databases" value="user-provided"/>
+            <param name="user_db_path" value="user_db_dir"/>
+            <param name="user_db_dna" value="db_dna.fasta" ftype="fasta"/>
+            <param name="user_db_aa" value="db_aa.fasta" ftype="fasta"/>
             <param name="tools" value="diamond"/>
             <section name="sec_thresholds">
                 <param name="q_min_cov" value="40.0"/>
@@ -149,7 +171,7 @@ via bioconda. The available databases are:
 - **ResFinder** — Antimicrobial resistance genes (selected by default)
 - **CARD** — Comprehensive Antibiotic Resistance Database (selected by default)
 - **NCBI AMR** — NCBI's AMR reference gene database
-- **User-provided** — Custom database directory (built with `build_database.sh`)
+- **User-provided** — Custom database (built from provided DNA and AA FASTA files)
 
 No `--db-path` is required when using the built-in databases. The CARD,
 ResFinder, and NCBI databases are installed as part of the bioconda package
@@ -162,7 +184,7 @@ and are automatically discovered at runtime.
 - **Evidence summary** — Evidence, candidate-allele, and exact-allele counts
 - **Allele resolution** — Family-level top candidate and competing alleles
 - **Report FASTA** *(optional)* — Sequences passing detection thresholds
-- **Results archive** — Full output directory (zip), usable as input to
+- **Results archive** — Full output directory (tar.gz), usable as input to
   Recompute, Gene-Stats, or Combine
     ]]></help>
     <expand macro="citations"/>
