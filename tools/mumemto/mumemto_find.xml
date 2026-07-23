@@ -3,7 +3,6 @@
     <macros>
         <import>macros.xml</import>
     </macros>
-    <expand macro="bio_tools"/>
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
@@ -26,8 +25,19 @@ $options.binary_output
 #elif $options.merge_mode == 'anchor':
   -Mn
 #end if
--t \$GALAXY_SLOTS
-#for $i in range(len($input_fastas)):
+#if $options.min_match_len:
+  -l $options.min_match_len
+#end if
+#if $options.window:
+  -w $options.window
+#end if
+#if $options.modulus:
+  -m $options.modulus
+#end if
+#if $options.no_revcomp:
+  -r
+#end if
+-for $i in range(len($input_fastas)):
   input${i}.fa
 #end for
 &&
@@ -55,11 +65,15 @@ mv 'output.lengths' '$lengths_output'
             <param argument="-f" name="max_per_sequence" type="integer" value="1" min="1" label="Maximum occurrences per sequence" help="1 = strict multi-MUMs (default); values &gt; 1 find multi-MEMs (e.g., duplicated regions)"/>
             <param argument="-F" name="max_total" type="integer" optional="true" label="Maximum total occurrences in collection" help="Negative values are relative to N"/>
             <param argument="-b" name="binary_output" type="boolean" truevalue="-b" falsevalue="" checked="false" label="Output binary .bumbl format" help="Binary format for faster I/O"/>
+            <param argument="-l" name="min_match_len" type="integer" optional="true" min="1" label="Minimum MUM or MEM length" help="Default: 20"/>
             <param name="merge_mode" type="select" label="Merging mode" help="String-based merging (-M) generates .thresh and .thresh_rev files; anchor-based merging (-Mn) generates .athresh files. Use these with mumemto merge to combine partitioned runs.">
                 <option value="none" selected="true">No merging</option>
                 <option value="string">String-based merging (-M)</option>
                 <option value="anchor">Anchor-based merging (-Mn)</option>
             </param>
+            <param argument="-r" name="no_revcomp" type="boolean" truevalue="-r" falsevalue="" checked="false" label="Disable reverse complement search" help="By default, the reverse complement of sequences is included. Check to exclude."/>
+            <param argument="-w" name="window" type="integer" optional="true" min="1" label="Window size for PFP" help="Default: 10"/>
+            <param argument="-m" name="modulus" type="integer" optional="true" min="1" label="Hash modulus for PFP" help="Default: 100"/>
         </section>
     </inputs>
     <outputs>
@@ -90,8 +104,9 @@ mv 'output.lengths' '$lengths_output'
             <output name="mums_output" ftype="txt">
                 <assert_contents>
                     <has_n_columns n="3"/>
-                    <has_text text="0,0,0"/>
                     <has_text text="+"/>
+                    <has_text text=","/>
+                    <has_n_lines n="3" delta="1"/>
                 </assert_contents>
             </output>
             <output name="lengths_output" ftype="tabular">
@@ -99,6 +114,7 @@ mv 'output.lengths' '$lengths_output'
                     <has_n_lines n="3"/>
                     <has_text text="genome1.fa"/>
                     <has_text text="624"/>
+                    <has_n_columns n="2"/>
                 </assert_contents>
             </output>
         </test>
@@ -113,14 +129,16 @@ mv 'output.lengths' '$lengths_output'
             <output name="mums_output" ftype="txt">
                 <assert_contents>
                     <has_n_columns n="3"/>
-                    <has_text text="0,0,0"/>
                     <has_text text="+"/>
+                    <has_text text=","/>
+                    <has_n_lines n="5" delta="5"/>
                 </assert_contents>
             </output>
             <output name="lengths_output" ftype="tabular">
                 <assert_contents>
                     <has_n_lines n="3"/>
                     <has_text text="624"/>
+                    <has_n_columns n="2"/>
                 </assert_contents>
             </output>
         </test>
@@ -135,12 +153,14 @@ mv 'output.lengths' '$lengths_output'
                 <assert_contents>
                     <has_text text="+"/>
                     <has_text text=","/>
+                    <has_n_lines n="3" delta="3"/>
                 </assert_contents>
             </output>
             <output name="lengths_output" ftype="tabular">
                 <assert_contents>
                     <has_n_lines n="3"/>
                     <has_text text="624"/>
+                    <has_n_columns n="2"/>
                 </assert_contents>
             </output>
         </test>
@@ -156,6 +176,7 @@ mv 'output.lengths' '$lengths_output'
                 <assert_contents>
                     <has_n_lines n="3"/>
                     <has_text text="624"/>
+                    <has_n_columns n="2"/>
                 </assert_contents>
             </output>
         </test>
@@ -184,8 +205,12 @@ multi-MUMs are computed (match appears exactly once in every sequence).
 - **Max total (-F):** Maximum total occurrences in the collection. Useful for
   filtering low-complexity matches. Negative values are relative to N.
 - **Binary output (-b):** Output binary `.bumbl` format instead of text.
+- **Min match length (-l):** Minimum MUM or MEM length (default: 20).
 - **Merging mode:** Enable string-based (`-M`) or anchor-based (`-Mn`) merging
   to generate threshold files for downstream partition merging with mumemto merge.
+- **No reverse complement (-r):** Exclude the reverse complement of sequences.
+- **Window size (-w):** Window size used for PFP (default: 10).
+- **Hash modulus (-m):** Hash modulus used for PFP (default: 100).
 
 ## Output formats
 

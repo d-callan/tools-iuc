@@ -2,11 +2,6 @@
     <token name="@TOOL_VERSION@">1.4.0</token>
     <token name="@VERSION_SUFFIX@">0</token>
     <token name="@PROFILE@">24.1</token>
-    <xml name="bio_tools">
-        <xrefs>
-            <xref type="bio.tools">mumemto</xref>
-        </xrefs>
-    </xml>
     <xml name="requirements">
         <requirements>
             <requirement type="package" version="@TOOL_VERSION@">mumemto</requirement>
