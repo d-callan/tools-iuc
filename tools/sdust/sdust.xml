@@ -1,0 +1,83 @@
+<tool id="sdust" name="sdust" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Find low-complexity regions in DNA sequences</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+sdust -w $w -t $t '$input_fasta' > '$output_bed'
+    ]]></command>
+    <inputs>
+        <param name="input_fasta" type="data" format="fasta,fasta.gz" label="Input FASTA file"/>
+        <param argument="-w" type="integer" value="64" min="1" label="Window size" help="Window size for the DUST algorithm (default: 64)"/>
+        <param argument="-t" type="integer" value="20" min="0" label="DUST score threshold" help="Threshold for masking; higher values mask less (default: 20)"/>
+    </inputs>
+    <outputs>
+        <data name="output_bed" format="bed"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test.fa" ftype="fasta"/>
+            <output name="output_bed" ftype="bed">
+                <assert_contents>
+                    <has_n_lines n="2"/>
+                    <has_n_columns n="3"/>
+                    <has_line_matching expression="seq1\t0\t1\d\d"/>
+                    <has_line_matching expression="seq2\t0\t1\d\d"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test.fa" ftype="fasta"/>
+            <param name="w" value="32"/>
+            <param name="t" value="15"/>
+            <output name="output_bed" ftype="bed">
+                <assert_contents>
+                    <has_n_lines n="2"/>
+                    <has_n_columns n="3"/>
+                    <has_line_matching expression="seq1\t0\t1\d\d"/>
+                    <has_line_matching expression="seq2\t0\t1\d\d"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_fasta" value="test.fa.gz" ftype="fasta.gz"/>
+            <output name="output_bed" ftype="bed">
+                <assert_contents>
+                    <has_n_lines n="2"/>
+                    <has_n_columns n="3"/>
+                    <has_line_matching expression="seq1\t0\t1\d\d"/>
+                    <has_line_matching expression="seq2\t0\t1\d\d"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# sdust
+
+## What it does
+
+Sdust finds low-complexity regions in DNA sequences using the symmetric DUST
+algorithm. It produces output identical to NCBI's `dustmasker` (except in
+assembly gaps) and is approximately four times faster.
+
+## Input
+
+A FASTA file of DNA sequences (optionally gzip-compressed).
+
+## Output
+
+A BED file with three columns:
+
+1. Sequence (chromosome) name
+2. Start position (0-based)
+3. End position (half-open)
+
+## Parameters
+
+- **Window size** (-w): Sliding window size for the DUST algorithm. Default: 64.
+- **Threshold** (-t): DUST score threshold for masking. Higher values result in less masking. Default: 20.
+    ]]></help>
+    <expand macro="citation"/>
+</tool>
