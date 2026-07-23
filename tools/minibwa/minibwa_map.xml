@@ -5,8 +5,8 @@
     </macros>
     <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 ## Prepare reference: either build index from history FASTA or use cached FASTA
 #if $reference_source.reference_source_selector == "history":
@@ -172,7 +172,7 @@ minibwa map
             <option value="sam" selected="true">SAM</option>
             <option value="paf">PAF</option>
         </param>
-        <param name="read_group" type="text" label="SAM read group line" help="Format: @RG\tID:foo\tSM:bar. Use literal tab characters (as \\t)." optional="true">
+        <param name="read_group" type="text" label="SAM read group line" help="Format: @RG\tID:foo\tSM:bar. Use literal tab characters (as \\t)." optional="true" sanitizer="none">
             <validator type="regex" message="Read group must start with @RG">^(@RG.*)?$</validator>
         </param>
         <param name="base_tag" type="select" label="Base alignment tag" help="Output an additional base alignment tag in SAM/PAF">
@@ -193,7 +193,7 @@ minibwa map
             <param argument="-m" name="min_chain_score" type="integer" min="0" optional="true" label="Minimum chaining score" help="Minimum chaining score [25]"/>
             <param argument="-p" name="min_sec_ratio" type="float" optional="true" label="Minimum secondary-to-primary ratio" help="Minimum secondary-to-primary score ratio [0.5]"/>
             <param argument="-N" name="max_secondary" type="integer" min="0" optional="true" label="Maximum secondary alignments" help="Retain at most INT secondary alignments [101]"/>
-            <param argument="--chain-only" name="chain_only" type="boolean" truevalue="--chain-only" falsevalue="" checked="false" label="Chaining only" help="Perform chaining only without base alignment"/>
+            <param argument="--chain-only" type="boolean" truevalue="--chain-only" falsevalue="" checked="false" label="Chaining only" help="Perform chaining only without base alignment"/>
             <param name="adap_override" type="select" label="Adaptive mode override" help="Force enable or disable the adaptive mode">
                 <option value="default" selected="true">Preset default</option>
                 <option value="yes">yes — force adaptive mode</option>
@@ -277,7 +277,7 @@ minibwa map
             <output name="output" ftype="paf">
                 <assert_contents>
                     <has_text text="chrM"/>
-                    <has_n_columns ncols="12"/>
+                    <has_n_columns n="12"/>
                 </assert_contents>
             </output>
         </test>

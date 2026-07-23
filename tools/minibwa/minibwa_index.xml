@@ -5,8 +5,8 @@
     </macros>
     <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 ln -s '$reference_fasta' 'ref.fa' &&
 
@@ -31,7 +31,7 @@ mv 'ref.mbw' '$index_mbw'
     ]]></command>
     <inputs>
         <param name="reference_fasta" type="data" format="fasta,fasta.gz" label="Reference genome FASTA"/>
-        <param argument="--meth" name="meth" type="boolean" truevalue="--meth" falsevalue="" checked="false" label="Generate BS-seq index" help="Generate an additional index file for directional bisulfite sequencing (BS-seq) alignment"/>
+        <param argument="--meth" type="boolean" truevalue="--meth" falsevalue="" checked="false" label="Generate BS-seq index" help="Generate an additional index file for directional bisulfite sequencing (BS-seq) alignment"/>
         <param argument="-l" name="low_memory" type="boolean" truevalue="-l" falsevalue="" checked="false" label="Use low-memory BWT-SW algorithm" help="Use the slower but memory-efficient BWT-SW algorithm instead of the default libsais algorithm"/>
     </inputs>
     <outputs>
