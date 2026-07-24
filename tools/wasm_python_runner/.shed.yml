@@ -1,0 +1,15 @@
+owner: iuc
+name: wasm_python_runner
+description: Execute Python snippets in a WebAssembly sandbox inside Galaxy workflows
+long_description: |
+    Allows workflow developers to inject custom Python text- or tabular-manipulation
+    snippets into automated pipelines. Scripts run inside a wasmtime WebAssembly
+    sandbox that blocks network access and restricts filesystem access to the job
+    working directory, isolating arbitrary code from the host cluster environment.
+    Accepts one or more tabular/text datasets as input and produces a single output.
+categories:
+    - Text Manipulation
+    - Workflows
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/wasm_python_runner
+homepage_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/wasm_python_runner
+type: unrestricted

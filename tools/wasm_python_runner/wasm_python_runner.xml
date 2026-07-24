@@ -1,0 +1,166 @@
+<tool id="wasm_python_runner" name="Secure Python Code Runner" version="1.0.0+galaxy0" profile="23.0">
+    <description>with WebAssembly server-side sandboxing for workflows</description>
+    <requirements>
+        <!-- Host-native runtime engine; Bioconda provides amd64/arm64 builds -->
+        <requirement type="package" version="29.0.0">wasmtime</requirement>
+    </requirements>
+    <command detect_errors="exit_code"><![CDATA[
+        ## Write the script into the sandbox working directory for execution and provenance
+        cp '$python_script_file' run_script.py &&
+
+        ## Symlink all inputs into the working directory with predictable numbered names
+        ln -sf '$input_dataset' input_0 &&
+        #set $input_counter = 1
+        #for $inp in $additional_inputs:
+            ln -sf '${inp.input_dataset}' input_${input_counter} &&
+            #set $input_counter = $input_counter + 1
+        #end for
+
+        ## Execute inside the WASM sandbox; --dir . restricts guest FS to the job working
+        ## directory only, blocking access to host paths, env vars, and network sockets
+        wasmtime run
+            --dir .
+            '$__tool_directory__/bin/python.wasm'
+            run_script.py
+            --input input_0
+            #set $input_counter = 1
+            #for $inp in $additional_inputs:
+                --input input_${input_counter}
+                #set $input_counter = $input_counter + 1
+            #end for
+            --output output_data &&
+
+        ## Relocate the sandbox output to the Galaxy-managed dataset path
+        mv output_data '$output_dataset'
+    ]]></command>
+    <configfiles>
+        <!-- Configfile ensures multi-line Python (including # comments and $ signs) is
+             written verbatim without shell or Cheetah interpretation -->
+        <configfile name="python_script_file">$python_script</configfile>
+    </configfiles>
+    <inputs>
+        <param name="input_dataset" type="data" format="tabular,tsv,csv,txt"
+            label="Input Dataset"
+            help="Primary tabular or text data file to process (available as input_0 in the script)." />
+        <repeat name="additional_inputs" title="Additional Input Datasets" min="0">
+            <param name="input_dataset" type="data" format="tabular,tsv,csv,txt"
+                label="Additional Input Dataset"
+                help="Available as input_1, input_2, ... in the order added." />
+        </repeat>
+        <param name="python_script" type="text" area="true"
+            label="Python Transformation Script"
+            help="Write Python code that reads from --input paths and writes to --output. Only the standard library and pure-Python packages bundled with the WASM binary are available.">
+            <sanitize>
+                <!-- Disable HTML entity encoding so operators like &lt; and &gt; reach
+                     the configfile as literal < and > characters -->
+                <mapping initial="none"/>
+            </sanitize>
+            <validator type="empty" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output_dataset" format_source="input_dataset"
+            label="${tool.name} on ${on_string}" />
+    </outputs>
+    <tests>
+        <!-- Single input: write a fixed string to output -->
+        <test expect_num_outputs="1">
+            <param name="input_dataset" value="test_input.tsv" ftype="tabular"/>
+            <param name="python_script" value="import argparse
+p = argparse.ArgumentParser()
+p.add_argument('--input', action='append', dest='inputs')
+p.add_argument('--output')
+args = p.parse_args()
+with open(args.output, 'w') as f:
+    f.write('WASM Success\n')"/>
+            <output name="output_dataset">
+                <assert_contents>
+                    <has_text text="WASM Success" />
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Multiple inputs: concatenate both inputs into one output -->
+        <test expect_num_outputs="1">
+            <param name="input_dataset" value="test_input.tsv" ftype="tabular"/>
+            <repeat name="additional_inputs">
+                <param name="input_dataset" value="test_input.tsv" ftype="tabular"/>
+            </repeat>
+            <param name="python_script" value="import argparse
+p = argparse.ArgumentParser()
+p.add_argument('--input', action='append', dest='inputs')
+p.add_argument('--output')
+args = p.parse_args()
+lines = []
+for path in args.inputs:
+    with open(path) as f:
+        lines.extend(f.readlines())
+with open(args.output, 'w') as f:
+    f.writelines(lines)"/>
+            <output name="output_dataset">
+                <assert_contents>
+                    <has_text text="col1" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help><![CDATA[
+**Secure Python Code Runner** executes a user-supplied Python script inside a WebAssembly (WASM) sandbox powered by ``wasmtime``. The sandbox blocks network access and restricts filesystem access to the job working directory, isolating arbitrary code from the host cluster environment.
+
+-----
+
+**Script Interface**
+
+Inputs are passed as repeated ``--input`` flags in the order they appear in the tool form (``input_0``, ``input_1``, ...); the output path is ``--output``. A minimal boilerplate::
+
+    import argparse
+
+    p = argparse.ArgumentParser()
+    p.add_argument('--input', action='append', dest='inputs')
+    p.add_argument('--output')
+    args = p.parse_args()
+
+    with open(args.output, 'w') as out:
+        for path in args.inputs:
+            with open(path) as f:
+                out.write(f.read())
+
+-----
+
+**Example: filter rows where column 2 > threshold**
+
+::
+
+    import argparse, csv
+
+    p = argparse.ArgumentParser()
+    p.add_argument('--input', action='append', dest='inputs')
+    p.add_argument('--output')
+    args = p.parse_args()
+
+    with open(args.output, 'w', newline='') as out_f:
+        writer = csv.writer(out_f, delimiter='\t')
+        for path in args.inputs:
+            with open(path, newline='') as in_f:
+                for row in csv.reader(in_f, delimiter='\t'):
+                    if row and row[1] > '500':
+                        writer.writerow(row)
+
+-----
+
+**Available libraries**
+
+Only the standard library and pure-Python packages bundled with the WASM binary are available. C-extension packages (e.g. numpy, pandas) are not supported. Use the built-in ``csv``, ``json``, ``re``, ``collections``, ``itertools``, and ``functools`` modules for tabular manipulation.
+
+-----
+
+**Security model**
+
+- **Network**: All socket operations raise an error inside the sandbox (WASI disables host socket creation).
+- **Filesystem**: ``wasmtime --dir .`` maps only the job working directory into the guest virtual filesystem. Host paths, cluster secrets, and environment variables are invisible to the script.
+- **CPU / memory**: Bounded by Galaxy's cluster wall-time and memory slot settings.
+- **Provenance**: The exact script is written to ``run_script.py`` in the job working directory, visible via the dataset's *View Info* page and embedded in exported ``.ga`` workflow files.
+    ]]></help>
+    <citations>
+        <citation type="doi">10.1145/3368089.3409718</citation>
+    </citations>
+</tool>

@@ -1,0 +1,12 @@
+# python.wasm is not stored in version control due to its binary size (~15-25 MB).
+#
+# Obtain a pre-built WASI-compiled CPython binary from one of:
+#   - VMware Labs WebAssembly Language Runtimes:
+#     https://github.com/vmware-labs/webassembly-language-runtimes/releases
+#   - Official CPython WASM builds (wasm32-wasi target):
+#     https://github.com/brettcannon/cpython-wasi-build/releases
+#
+# Place the binary here as `python.wasm` before installing the tool.
+#
+# A future Bioconda package (python-wasm) may provide this dependency
+# automatically via the standard <requirement> mechanism.
