@@ -5,6 +5,7 @@
     </macros>
     <expand macro="requirements"/>
     <expand macro="version_command"/>
+    <expand macro="stdio"/>
     <command detect_errors="aggressive"><![CDATA[
 ## For each partition: symlink FASTA inputs, run mumemto find -M to generate partition outputs
 #set $partition_prefixes = []
@@ -21,7 +22,7 @@
     ${prefix}_input${j}.fa
   #end for
   &&
-  #set $dummy = $partition_prefixes.append($prefix + '.mums')
+  #set $dummy = $partition_prefixes.append($prefix + '.thresh')
 #end for
 ## Merge all partition outputs
 mumemto merge
@@ -55,7 +56,7 @@ mv 'merged.mums' '$merged_mums'
                     <has_n_columns n="3"/>
                     <has_text text="+"/>
                     <has_text text=","/>
-                    <has_n_lines n="3" delta="3"/>
+                    <has_n_lines n="3"/>
                 </assert_contents>
             </output>
         </test>

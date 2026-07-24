@@ -11,6 +11,12 @@
     <xml name="version_command">
         <version_command>mumemto --version 2&gt;&amp;1</version_command>
     </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:" level="fatal"/>
+            <regex match="Error:" level="fatal"/>
+        </stdio>
+    </xml>
     <xml name="citations">
         <citations>
             <citation type="doi">10.1186/s13059-025-03644-0</citation>

@@ -5,6 +5,7 @@
     </macros>
     <expand macro="requirements"/>
     <expand macro="version_command"/>
+    <expand macro="stdio"/>
     <command detect_errors="aggressive"><![CDATA[
 ## Symlink mums and lengths files to matching prefixes so viz can find them
 ln -s '$mum_file' viz_input.mums &&

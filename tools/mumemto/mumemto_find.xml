@@ -5,6 +5,7 @@
     </macros>
     <expand macro="requirements"/>
     <expand macro="version_command"/>
+    <expand macro="stdio"/>
     <command detect_errors="aggressive"><![CDATA[
 ## Symlink input FASTA files with .fa extension so mumemto recognizes them
 #for $i, $fasta in enumerate($input_fastas):
@@ -37,18 +38,19 @@ $options.binary_output
 #if $options.no_revcomp:
   -r
 #end if
--for $i in range(len($input_fastas)):
+#for $i in range(len($input_fastas)):
   input${i}.fa
 #end for
 &&
 ## Rename outputs to Galaxy-expected names
 #if $options.binary_output:
-  mv 'output.bumbl' '$mums_output' &&
+  mv 'output.bumbl' '$mums_output'
 #elif $options.max_per_sequence > 1:
-  mv 'output.mems' '$mums_output' &&
+  mv 'output.mems' '$mums_output'
 #else:
-  mv 'output.mums' '$mums_output' &&
+  mv 'output.mums' '$mums_output'
 #end if
+&&
 mv 'output.lengths' '$lengths_output'
 #if $options.merge_mode == 'string':
   && mv 'output.thresh' '$thresh_output'
@@ -106,7 +108,7 @@ mv 'output.lengths' '$lengths_output'
                     <has_n_columns n="3"/>
                     <has_text text="+"/>
                     <has_text text=","/>
-                    <has_n_lines n="3" delta="1"/>
+                    <has_n_lines n="3"/>
                 </assert_contents>
             </output>
             <output name="lengths_output" ftype="tabular">
@@ -131,7 +133,7 @@ mv 'output.lengths' '$lengths_output'
                     <has_n_columns n="3"/>
                     <has_text text="+"/>
                     <has_text text=","/>
-                    <has_n_lines n="5" delta="5"/>
+                    <has_n_lines n="5"/>
                 </assert_contents>
             </output>
             <output name="lengths_output" ftype="tabular">
@@ -153,7 +155,7 @@ mv 'output.lengths' '$lengths_output'
                 <assert_contents>
                     <has_text text="+"/>
                     <has_text text=","/>
-                    <has_n_lines n="3" delta="3"/>
+                    <has_n_lines n="3"/>
                 </assert_contents>
             </output>
             <output name="lengths_output" ftype="tabular">

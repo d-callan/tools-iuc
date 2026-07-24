@@ -1,8 +1,8 @@
 ---
-description: 'Mumemto - finding multi-MUMs and MEMs in pangenomes'
+description: "Mumemto - finding multi-MUMs and MEMs in pangenomes"
 categories:
-- Sequence Analysis
-- Pangenomics
+  - Sequence Analysis
+  - Pangenomics
 owner: iuc
 homepage_url: https://github.com/vikshiv/mumemto
 long_description: |
