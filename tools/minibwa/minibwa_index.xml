@@ -20,6 +20,7 @@ minibwa index
 #end if
 'ref.fa'
 'ref'
+2>/dev/null
 &&
 
 ## Move index files to Galaxy output paths

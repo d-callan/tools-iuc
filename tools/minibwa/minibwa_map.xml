@@ -12,17 +12,17 @@
 #if $reference_source.reference_source_selector == "history":
     ln -s '$reference_source.fasta_ref' 'ref.fa' &&
     #if $meth:
-        minibwa index --meth -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' &&
+        minibwa index --meth -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' 2>/dev/null &&
     #else:
-        minibwa index -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' &&
+        minibwa index -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' 2>/dev/null &&
     #end if
     #set $idx_prefix = 'ref'
 #else:
     #set $ref_path = str($reference_source.fasta_ref.fields.path)
     #if $meth:
-        minibwa index --meth -t \${GALAXY_SLOTS:-1} '$ref_path' 'ref' &&
+        minibwa index --meth -t \${GALAXY_SLOTS:-1} '$ref_path' 'ref' 2>/dev/null &&
     #else:
-        minibwa index -t \${GALAXY_SLOTS:-1} '$ref_path' 'ref' &&
+        minibwa index -t \${GALAXY_SLOTS:-1} '$ref_path' 'ref' 2>/dev/null &&
     #end if
     #set $idx_prefix = 'ref'
 #end if
@@ -142,6 +142,7 @@ minibwa map
 #else:
     '$input_type.reads'
 #end if
+2>/dev/null
 > '$output'
     ]]></command>
     <inputs>

@@ -1,1 +1,2 @@
-# Placeholder - superseded by .shed.yml
+# This file is intentionally empty. The .shed.yml file at the top level
+# defines the tool suite and individual tool repositories.

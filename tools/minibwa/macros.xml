@@ -13,14 +13,16 @@
         </requirements>
     </xml>
     <xml name="version_command">
-        <version_command>minibwa --version</version_command>
+        <version_command>minibwa version</version_command>
     </xml>
     <xml name="stdio">
         <stdio>
             <exit_code range="1:"/>
             <exit_code range=":-1"/>
-            <regex match="Error:"/>
-            <regex match="Exception:"/>
+            <regex match="ERROR:"/>
+            <regex match="\[E::"/>
+            <regex match="ABORT!"/>
+            <regex match="failed to"/>
         </stdio>
     </xml>
     <token name="@THREADS@">-t \${GALAXY_SLOTS:-1}</token>
