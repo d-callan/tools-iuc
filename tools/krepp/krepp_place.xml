@@ -1,0 +1,116 @@
+<tool id="krepp_place" name="krepp place" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>phylogenetic placement of query sequences on a backbone tree</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p index_dir &&
+tar -xf '$index' -C index_dir &&
+
+krepp place
+-i index_dir
+-q '$query'
+--num-threads \${GALAXY_SLOTS:-4}
+#if $nwk_tree:
+    -t '$nwk_tree'
+#end if
+#if $lineage_file:
+    -l '$lineage_file'
+#end if
+#if $output_mode == 'no_multi':
+    --no-multi
+#elif $output_mode == 'summarize':
+    --summarize
+#end if
+#if $filter:
+    --filter
+#end if
+#if $output_format == 'tabular':
+    --tabular
+#end if
+--tau $tau
+-o '$output'
+]]></command>
+    <inputs>
+        <param name="index" type="data" format="tar" label="Krepp index" help="Index archive produced by krepp index"/>
+        <param argument="-q" name="query" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Query sequences" help="FASTA or FASTQ file containing query sequences"/>
+        <param argument="-t" name="nwk_tree" type="data" format="newick" optional="true" label="Backbone tree (optional)" help="Override the backbone tree embedded in the index"/>
+        <param argument="-l" name="lineage_file" type="data" format="tabular" optional="true" label="Taxonomic lineages file (optional)" help="Alternative to a tree: tab-separated file with taxonomic lineages"/>
+        <param name="output_format" type="select" label="Output format">
+            <option value="jplace" selected="true">jplace (JSON)</option>
+            <option value="tabular">Tabular</option>
+        </param>
+        <param name="output_mode" type="select" label="Output mode">
+            <option value="multi" selected="true">Multiple placements per read (default)</option>
+            <option value="no_multi">Single best placement per read (--no-multi)</option>
+            <option value="summarize">Summarize to abundance table (--summarize)</option>
+        </param>
+        <param argument="--filter" type="boolean" truevalue="--filter" falsevalue="" checked="true" label="Filter weak placements" help="Filter out placements with insufficient k-mer support"/>
+        <param argument="--tau" type="integer" value="2" min="1" label="K-mer match threshold" help="Minimum number of k-mer matches required for a placement to be retained (used with --filter)"/>
+    </inputs>
+    <outputs>
+        <data name="output_jplace" format="json" label="${tool.name} jplace on ${on_string}">
+            <filter>output_format == 'jplace'</filter>
+        </data>
+        <data name="output_tabular" format="tabular" label="${tool.name} tabular on ${on_string}">
+            <filter>output_format == 'tabular'</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="index" value="toy_index.tar" ftype="tar"/>
+            <param name="query" value="query_toy.fq" ftype="fastq"/>
+            <param name="nwk_tree" value="tree.nwk" ftype="newick"/>
+            <param name="output_format" value="jplace"/>
+            <param name="output_mode" value="multi"/>
+            <param name="filter" value="True"/>
+            <param name="tau" value="2"/>
+            <assert_command>
+                <has_text text="krepp place"/>
+                <has_text text="-i index_dir"/>
+                <has_text text="-t"/>
+            </assert_command>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="index" value="toy_index.tar" ftype="tar"/>
+            <param name="query" value="query_toy.fq" ftype="fastq"/>
+            <param name="nwk_tree" value="tree.nwk" ftype="newick"/>
+            <param name="output_format" value="tabular"/>
+            <param name="output_mode" value="multi"/>
+            <param name="filter" value="True"/>
+            <param name="tau" value="2"/>
+            <assert_command>
+                <has_text text="--tabular"/>
+            </assert_command>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Performs phylogenetic placement of query sequences on a backbone tree using a
+pre-built krepp index. Placement uses maximum pseudo-likelihood to find the
+optimal position for each query sequence on the reference phylogeny.
+
+**Output**
+
+- **jplace**: JSON format compatible with downstream tools like gappa and
+  iTOL. Contains placement edges, likelihoods, and pendant lengths.
+- **Tabular**: Tab-separated format with columns: EDGE_NUM, LIKELIHOOD,
+  LIKE_WEIGHT_RATIO, DISTAL_LENGTH, PENDANT_LENGTH, SEQ_ID.
+
+**Options**
+
+- **Backbone tree**: Override the tree embedded in the index.
+- **Lineage file**: Use taxonomic lineages instead of a tree.
+- **Multiple placements**: Report multiple placements per read (default) or
+  only the best.
+- **Filter**: Remove placements with insufficient k-mer support.
+- **Tau**: Minimum k-mer matches required when filtering.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

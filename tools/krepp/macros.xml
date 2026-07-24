@@ -1,0 +1,36 @@
+<macros>
+    <token name="@TOOL_VERSION@">0.8.2</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">krepp</requirement>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>krepp --version 2&gt;&amp;1 | head -n1</version_command>
+    </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="Error:"/>
+            <regex match="Exception:"/>
+        </stdio>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1186/s13059-026-03999-y</citation>
+        </citations>
+    </xml>
+    <token name="@ATTRIBUTION@">**Attribution**
+
+This Galaxy tool wrapper is based on krepp, a k-mer-based maximum
+pseudo-likelihood tool for estimating distances of reads to genomes and
+performing genome-wide phylogenetic placement.
+
+krepp is available from
+[bioconda](https://anaconda.org/bioconda/krepp) and its source code is
+hosted on [GitHub](https://github.com/bo1929/krepp).</token>
+    <token name="@THREADS@">--num-threads \${GALAXY_SLOTS:-4}</token>
+</macros>

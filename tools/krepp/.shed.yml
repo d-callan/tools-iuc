@@ -1,0 +1,23 @@
+categories:
+- Phylogenetics
+- Metagenomics
+description: k-mer-based maximum pseudo-likelihood tool for estimating distances of reads to genomes and phylogenetic placement
+homepage_url: https://github.com/bo1929/krepp
+long_description: |
+  krepp is a k-mer-based maximum pseudo-likelihood tool for estimating distances
+  of reads to genomes and performing genome-wide phylogenetic placement. It
+  operates in two stages: indexing reference genomes (with an optional backbone
+  phylogeny) and then querying reads against that index to either estimate
+  distances (dist) or place reads on a tree (place). It also offers simpler
+  one-to-one sketching/seeking functionality.
+name: krepp
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/krepp
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for krepp {{ tool_name }}."
+suite:
+  name: "suite_krepp"
+  description: "A suite of Galaxy tools for krepp, a k-mer-based maximum pseudo-likelihood method for estimating read distances and phylogenetic placement."
+  type: repository_suite_definition

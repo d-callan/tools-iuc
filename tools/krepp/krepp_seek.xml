@@ -1,0 +1,51 @@
+<tool id="krepp_seek" name="krepp seek" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>estimate distances of query sequences to a sketch</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+krepp seek
+-i '$sketch'
+-q '$query'
+--num-threads \${GALAXY_SLOTS:-4}
+> '$output'
+]]></command>
+    <inputs>
+        <param argument="-i" name="sketch" type="data" format="binary" label="Krepp sketch" help="Sketch file produced by krepp sketch"/>
+        <param argument="-q" name="query" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Query sequences" help="FASTA or FASTQ file containing query sequences"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="tabular"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="sketch" value="toy_sketch.bin" ftype="binary"/>
+            <param name="query" value="query_toy.fq" ftype="fastq"/>
+            <assert_command>
+                <has_text text="krepp seek"/>
+                <has_text text="-i"/>
+                <has_text text="-q"/>
+            </assert_command>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Estimates distances of query sequences to a pre-built krepp sketch. This is
+the one-to-one counterpart of `krepp dist`, using a single sketch instead of
+a multi-reference index.
+
+**Output**
+
+A tab-separated file with columns:
+
+- **SEQ_ID**: query sequence identifier
+- **DIST**: estimated distance (mismatch rate)
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
