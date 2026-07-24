@@ -1,10 +1,10 @@
 api:
   base_url: https://llm.ai.e-infra.cz
   api_key_env: GXY_TOOL_BOT_API_KEY_CZ
-  model: glm
+  model: deepseek-thinking
   fallback_models:
-    - deepseek-thinking
-    - kimi
+    - agentic
+    - mini
   max_tool_iterations: 30
   temperature_plan: 0.4
   temperature_generate: 0.2
