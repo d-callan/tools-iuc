@@ -8,7 +8,7 @@
     <expand macro="stdio"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
-zcat -f '$reference_fasta' > 'ref.fa' &&
+zcat -f '$reference_fasta' > 'ref.fa' 2>/dev/null || cat '$reference_fasta' > 'ref.fa' &&
 
 minibwa index
 #if $low_memory:
@@ -47,12 +47,12 @@ mv 'ref.mbw' '$index_mbw'
             <param name="reference_fasta" ftype="fasta.gz" value="chrM-human.fa.gz"/>
             <output name="index_l2b" ftype="data">
                 <assert_contents>
-                    <has_size value="5000" delta="50000"/>
+                    <has_size value="100" delta="200"/>
                 </assert_contents>
             </output>
             <output name="index_mbw" ftype="data">
                 <assert_contents>
-                    <has_size value="30000" delta="100000"/>
+                    <has_size value="200" delta="500"/>
                 </assert_contents>
             </output>
         </test>
@@ -61,17 +61,17 @@ mv 'ref.mbw' '$index_mbw'
             <param name="meth" value="true"/>
             <output name="index_l2b" ftype="data">
                 <assert_contents>
-                    <has_size value="5000" delta="50000"/>
+                    <has_size value="100" delta="200"/>
                 </assert_contents>
             </output>
             <output name="index_mbw" ftype="data">
                 <assert_contents>
-                    <has_size value="30000" delta="100000"/>
+                    <has_size value="200" delta="500"/>
                 </assert_contents>
             </output>
             <output name="index_meth_mbw" ftype="data">
                 <assert_contents>
-                    <has_size value="10000" delta="100000"/>
+                    <has_size value="200" delta="500"/>
                 </assert_contents>
             </output>
         </test>

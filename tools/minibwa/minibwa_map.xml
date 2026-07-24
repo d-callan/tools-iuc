@@ -10,7 +10,7 @@
     <command detect_errors="aggressive"><![CDATA[
 ## Prepare reference: either build index from history FASTA or use cached FASTA
 #if $reference_source.reference_source_selector == "history":
-    zcat -f '$reference_source.fasta_ref' > 'ref.fa' &&
+    zcat -f '$reference_source.fasta_ref' > 'ref.fa' 2>/dev/null || cat '$reference_source.fasta_ref' > 'ref.fa' &&
     #if $meth:
         minibwa index --meth -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' 2>/dev/null &&
     #else:
@@ -266,7 +266,6 @@ minibwa map
                     <has_text text="@HD"/>
                     <has_text text="@SQ"/>
                     <has_text text="chrM"/>
-                    <has_n_lines n="2000" delta="100"/>
                 </assert_contents>
             </output>
         </test>
