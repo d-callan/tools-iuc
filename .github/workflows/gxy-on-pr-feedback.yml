@@ -111,6 +111,15 @@ jobs:
           path: |
             ${{ github.workspace }}/tools/${{ steps.find_tool_dir.outputs.tool_dir }}/test-data/*.tar
           if-no-files-found: ignore
+      - name: Post validation issues comment
+        if: steps.address.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f "$GITHUB_WORKSPACE/.validation-failed" ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body "⚠️ Validation issues were found after addressing feedback. Add the \`address-feedback\` label to have the bot attempt fixes again."
+            rm -f "$GITHUB_WORKSPACE/.validation-failed"
+          fi
       - name: Handle failure
         if: steps.address.outcome == 'failure'
         env:

@@ -129,6 +129,19 @@ jobs:
           path: |
             ${{ github.workspace }}/tools/${{ steps.create_pr.outputs.tool_dir }}/test-data/*.tar
           if-no-files-found: ignore
+      - name: Post validation issues comment
+        if: steps.create_pr.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TOOL_DIR="${{ steps.create_pr.outputs.tool_dir }}"
+          if [ -f "$GITHUB_WORKSPACE/.validation-failed" ]; then
+            PR_NUMBER=$(gh pr list --head "tool-bot/issue-${{ github.event.issue.number }}" --state open --json number --jq '.[0].number' 2>/dev/null || echo "")
+            if [ -n "$PR_NUMBER" ]; then
+              gh pr comment "$PR_NUMBER" --body "⚠️ Validation issues were found during generation. See the PR description for details, or add the \`address-feedback\` label to have the bot attempt fixes."
+            fi
+          fi
+          rm -f "$GITHUB_WORKSPACE/.validation-failed"
       - name: Handle generation failure
         if: steps.generate.outcome == 'failure'
         env:
