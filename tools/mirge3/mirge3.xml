@@ -5,8 +5,8 @@
     </macros>
     <expand macro="bio_tools"/>
     <expand macro="requirements"/>
-    <expand macro="version_command"/>
     <expand macro="stdio"/>
+    <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
 ## Symlink input FASTQ files with clean names and build comma-separated sample list
 #set $sample_list = []
@@ -20,7 +20,7 @@ mkdir -p output_dir &&
 
 miRge3.0
     -s '#echo ",".join($sample_list)//#'
-    -lib '${libraries_path.fields.path}'
+    -lib '${libraries_path}'
     -on '${organism_name}'
     -db '${mir_db}'
     -o output_dir
@@ -141,10 +141,7 @@ true
     ]]></command>
     <inputs>
         <param name="samples" type="data" format="fastq,fastq.gz" multiple="true" label="Input FASTQ file(s)" help="One or more FASTQ files (optionally gzipped). Multiple samples enable cross-sample analysis and differential expression."/>
-        <param name="libraries_path" type="select" label="miRge3.0 organism libraries" help="Pre-configured organism annotation libraries. If your organism is not listed, contact the administrator.">
-            <options from_data_table="mirge3_libraries"/>
-            <validator type="no_options" message="No miRge3.0 libraries are configured on this instance. Please contact the administrator."/>
-        </param>
+        <param name="libraries_path" type="text" value="" label="miRge3.0 organism libraries path" help="Path to the directory containing organism annotation libraries. If your organism is not available, libraries can be built using miRge3_build."/>
         <param name="organism_name" type="select" label="Organism" help="Organism name matching the annotation libraries. Note: tRNA fragment analysis is only supported for human.">
             <option value="human">human</option>
             <option value="mouse">mouse</option>
@@ -158,7 +155,7 @@ true
             <option value="miRBase" selected="true">miRBase</option>
             <option value="miRGeneDB">miRGeneDB</option>
         </param>
-        <param argument="-a" type="text" value="" label="3' adapter sequence" help="3' adapter to trim. Use 'illumina' for the standard Illumina adapter, or specify the exact sequence."/>
+        <param argument="-a" name="adapter" type="text" value="" label="3' adapter sequence" help="3' adapter to trim. Use 'illumina' for the standard Illumina adapter, or specify the exact sequence."/>
         <param argument="-g" name="front_adapter" type="text" value="" label="5' adapter sequence" help="5' adapter to trim, or a linked adapter string in the form 5'adapter...3'adapter."/>
         <param argument="-m" name="minimum_length" type="integer" value="16" min="1" label="Minimum read length" help="Discard reads shorter than this length after trimming"/>
         <param argument="-q" name="quality_cutoff" type="text" value="10" label="Quality cutoff" help="Trim low-quality bases from 5' and/or 3' ends. Single value trims 3' end only; two comma-separated values trim 5' then 3'. Example: 20 or 20,20"/>
@@ -166,13 +163,13 @@ true
         <param argument="-phr" name="phred64" type="boolean" truevalue="-phr 64" falsevalue="" checked="false" label="Phred64 quality encoding" help="Use phred64 quality encoding (default is phred33)"/>
         <param argument="-ex" name="cr_threshold" type="float" value="0.1" min="0" max="0.5" label="Canonical read threshold" help="Proportion of canonical reads for retaining miRNAs (range 0-0.5)"/>
         <section name="sec_umi" title="UMI Options" expanded="false">
-            <param argument="-umi" name="umi" type="text" value="" label="UMI lengths" help="Trim UMI of specified lengths at 5' and 3' ends. Example: 4,4 or 0,12"/>
+            <param argument="-umi" type="text" value="" label="UMI lengths" help="Trim UMI of specified lengths at 5' and 3' ends. Example: 4,4 or 0,12"/>
             <param argument="-udd" name="umi_dedup" type="boolean" truevalue="-udd" falsevalue="" checked="false" label="Remove PCR duplicates" help="Remove PCR duplicates using UMI (requires UMI lengths above)"/>
             <param argument="-qumi" name="qiagen_umi" type="boolean" truevalue="-qumi" falsevalue="" checked="false" label="Qiagen UMI processing" help="Use Qiagen-specific UMI processing (requires -umi)"/>
         </section>
         <section name="sec_analysis" title="Analysis Options" expanded="false">
             <param argument="-ai" name="atoI" type="boolean" truevalue="-ai" falsevalue="" checked="false" label="A-to-I RNA editing" help="Perform A-to-I RNA editing analysis"/>
-            <param argument="-trf" name="trf" type="boolean" truevalue="-trf" falsevalue="" checked="false" label="tRNA fragment analysis" help="Analyze tRNA fragments and halves (human only)"/>
+            <param argument="-trf" type="boolean" truevalue="-trf" falsevalue="" checked="false" label="tRNA fragment analysis" help="Analyze tRNA fragments and halves (human only)"/>
             <param argument="-nmir" name="novel_mirna" type="boolean" truevalue="-nmir" falsevalue="" checked="false" label="Novel miRNA prediction" help="Predict novel miRNAs (model trained on human/mouse)"/>
             <conditional name="novel_params">
                 <param name="novel_params_selector" type="select" label="Novel miRNA parameters">
@@ -248,6 +245,7 @@ true
         <!-- Test 1: Basic annotation run with GFF output -->
         <test expect_num_outputs="8">
             <param name="samples" ftype="fastq.gz" value="SRR772403.fastq.gz"/>
+            <param name="libraries_path" value="/data/mirge3_Lib"/>
             <param name="organism_name" value="nematode"/>
             <param name="mir_db" value="miRBase"/>
             <param name="adapter" value="illumina"/>
@@ -293,6 +291,7 @@ true
         <!-- Test 2: Novel miRNA prediction -->
         <test expect_num_outputs="9">
             <param name="samples" ftype="fastq.gz" value="SRR772403.fastq.gz"/>
+            <param name="libraries_path" value="/data/mirge3_Lib"/>
             <param name="organism_name" value="nematode"/>
             <param name="mir_db" value="miRBase"/>
             <param name="adapter" value="illumina"/>
@@ -311,6 +310,7 @@ true
         <!-- Test 3: A-to-I editing -->
         <test expect_num_outputs="8">
             <param name="samples" ftype="fastq.gz" value="SRR772403.fastq.gz"/>
+            <param name="libraries_path" value="/data/mirge3_Lib"/>
             <param name="organism_name" value="nematode"/>
             <param name="mir_db" value="miRBase"/>
             <param name="adapter" value="illumina"/>
@@ -326,6 +326,7 @@ true
         <!-- Test 4: A-to-I editing and novel miRNA with custom parameters -->
         <test expect_num_outputs="10">
             <param name="samples" ftype="fastq.gz" value="SRR772403.fastq.gz"/>
+            <param name="libraries_path" value="/data/mirge3_Lib"/>
             <param name="organism_name" value="nematode"/>
             <param name="mir_db" value="miRBase"/>
             <param name="adapter" value="illumina"/>
