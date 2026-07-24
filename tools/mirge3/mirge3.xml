@@ -8,11 +8,10 @@
     <expand macro="stdio"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
-## Symlink input FASTQ files with clean names and build comma-separated sample list
 #set $sample_list = []
 #for $i, $s in enumerate($samples):
     #set $fname = 'sample_' + str($i) + '.fastq'
-    ln -s '${s}' ${fname} &&
+    ln -s '${s}' '${fname}' &&
     $sample_list.append($fname)
 #end for
 
@@ -100,42 +99,38 @@ miRge3.0
     -shh
     &&
 
-## miRge3.0 creates a fixed subdirectory "results" inside output_dir (via -onam)
-#set $rd = 'output_dir/results'
+## miRge3.0 creates output in output_dir/results (via -onam results)
+rd='output_dir/results' &&
 
-## Move key outputs to expected Galaxy paths
-mv '$rd/annotation.report.html' '$annotation_report_html' &&
-mv '$rd/annotation.report.csv' '$annotation_report_csv' &&
-mv '$rd/miR.Counts.csv' '$mir_counts' &&
-mv '$rd/miR.RPM.csv' '$mir_rpm' &&
-mv '$rd/mapped.csv' '$mapped_csv' &&
-mv '$rd/run.log' '$log_file' &&
-mv '$rd/miRge3_visualization.html' '$visualization_html' &&
+## Move core outputs
+mv "\${rd}/annotation.report.html" '${annotation_report_html}' &&
+mv "\${rd}/annotation.report.csv" '${annotation_report_csv}' &&
+mv "\${rd}/miR.Counts.csv" '${mir_counts}' &&
+mv "\${rd}/miR.RPM.csv" '${mir_rpm}' &&
+mv "\${rd}/mapped.csv" '${mapped_csv}' &&
+mv "\${rd}/run.log" '${log_file}' &&
+mv "\${rd}/miRge3_visualization.html" '${visualization_html}' &&
 mkdir -p '${visualization_html.files_path}' &&
-mv '$rd/index_data.js' '${visualization_html.files_path}/index_data.js' &&
+mv "\${rd}/index_data.js" '${visualization_html.files_path}/index_data.js' &&
 #if $sec_analysis.gff_out:
-    mv '$rd/'*_miRge3.gff '$isomir_gff' &&
+    mv "\${rd}/"*_miRge3.gff '${isomir_gff}' &&
 #end if
 #if $sec_analysis.novel_mirna:
+    mv "\${rd}/"*_novel_miRNAs/*_novel_miRNAs_report.csv '${novel_mirna_report}' &&
     mkdir -p novel_pdf_dir &&
-    mv '$rd/FOLDER_novel_miRNAs/'*_novel_miRNAs_report.csv '$novel_mirna_report' &&
-    #import glob
-    #set $pdf_files = glob.glob($rd + '/FOLDER_novel_miRNAs/*.pdf')
-    #for $pdf in $pdf_files:
-        mv '$pdf' novel_pdf_dir/ &&
-    #end for
+    (mv "\${rd}/"*_novel_miRNAs/*.pdf novel_pdf_dir/ 2>/dev/null || true) &&
 #end if
 #if $sec_analysis.atoI:
-    mv '$rd/a2IEditing.report.csv' '$atoi_report' &&
+    mv "\${rd}/a2IEditing.report.csv" '${atoi_report}' &&
 #end if
 #if $sec_analysis.trf:
-    mv '$rd/tRFs.potential.report.tsv' '$trf_report' &&
-    mv '$rd/tRF.Counts.csv' '$trf_counts' &&
+    mv "\${rd}/tRFs.aligned.report.tsv" '${trf_report}' &&
+    mv "\${rd}/tRF.Counts.csv" '${trf_counts}' &&
 #end if
 #if $sec_diffex.diffex:
-    mv '$rd/miR.DiffExpn.txt' '$diffex_report' &&
-    mv '$rd/mirge_diffex.volcano.pdf' '$diffex_volcano' &&
-    mv '$rd/mirge_diffex.pca.pdf' '$diffex_pca' &&
+    mv "\${rd}/miR.DiffExpn.txt" '${diffex_report}' &&
+    mv "\${rd}/mirge_diffex.volcano.pdf" '${diffex_volcano}' &&
+    mv "\${rd}/mirge_diffex.pca.pdf" '${diffex_pca}' &&
 #end if
 true
     ]]></command>
