@@ -266,7 +266,7 @@ minibwa map
                     <has_text text="@HD"/>
                     <has_text text="@SQ"/>
                     <has_text text="chrM"/>
-                    <has_n_lines n="10" delta="100"/>
+                    <has_n_lines n="2000" delta="100"/>
                 </assert_contents>
             </output>
         </test>
@@ -284,7 +284,7 @@ minibwa map
             <output name="output" ftype="paf">
                 <assert_contents>
                     <has_text text="chrM"/>
-                    <has_n_columns n="12"/>
+                    <has_n_columns n="12" min="12"/>
                 </assert_contents>
             </output>
         </test>
