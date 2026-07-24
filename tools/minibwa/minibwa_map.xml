@@ -10,7 +10,7 @@
     <command detect_errors="aggressive"><![CDATA[
 ## Prepare reference: either build index from history FASTA or use cached FASTA
 #if $reference_source.reference_source_selector == "history":
-    ln -s '$reference_source.fasta_ref' 'ref.fa' &&
+    zcat -f '$reference_source.fasta_ref' > 'ref.fa' &&
     #if $meth:
         minibwa index --meth -t \${GALAXY_SLOTS:-1} 'ref.fa' 'ref' 2>/dev/null &&
     #else:
