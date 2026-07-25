@@ -1,0 +1,39 @@
+<tool name="pmotools export_xlsx" id="pmotools_export_xlsx" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Export all parts of a PMO into an XLSX workbook</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python export_pmo_into_xlsx
+  --pmo '$input_pmo'
+  --output '$output_xlsx'
+  --overwrite
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+    </inputs>
+    <outputs>
+        <data name="output_xlsx" format="xlsx"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
+            <output name="output_xlsx" ftype="xlsx">
+                <assert_contents>
+                    <has_size value="1000" delta="2000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@HELP_PREAMBLE@
+
+**Export PMO to XLSX**
+
+Exports all sections of a PMO file into a multi-sheet XLSX workbook. Each PMO section (specimen info, library sample info, target info, panel info, microhaplotypes detected, etc.) is written to its own worksheet.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

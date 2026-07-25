@@ -1,0 +1,110 @@
+<tool name="pmotools convert_to_pmo" id="pmotools_convert_to_pmo" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Convert text, Excel, or microhaplotype tables to PMO-compatible JSON</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python ${convert_type.convert_command}
+  --file '$convert_type.input_file'
+  --output '$output_json'
+  --overwrite
+  #if str($convert_type.convert_command) == "text_meta_to_json_meta":
+    --delim '$convert_type.delim'
+    #if str($convert_type.index_col_name):
+      --index_col_name '$convert_type.index_col_name'
+    #end if
+  #elif str($convert_type.convert_command) == "excel_meta_to_json_meta":
+    #if str($convert_type.sheet):
+      --sheet '$convert_type.sheet'
+    #end if
+    #if str($convert_type.index_col_name):
+      --index_col_name '$convert_type.index_col_name'
+    #end if
+  #elif str($convert_type.convert_command) == "microhaplotype_table_to_json_file":
+    #if str($convert_type.bioinfo_name):
+      --bioinfo_name '$convert_type.bioinfo_name'
+    #end if
+    --library_sample_name_col '$convert_type.library_sample_name_col'
+    --target_name_col '$convert_type.target_name_col'
+    --seq_col '$convert_type.seq_col'
+    --reads_col '$convert_type.reads_col'
+    #if str($convert_type.additional_cols):
+      --additional_cols '$convert_type.additional_cols'
+    #end if
+    --delim '$convert_type.delim'
+  #elif str($convert_type.convert_command) == "terra_amp_output_to_json":
+    --gt_sheet '$convert_type.gt_sheet'
+    --asv_table_sheet '$convert_type.asv_table_sheet'
+    --asv_seqs_sheet '$convert_type.asv_seqs_sheet'
+  #end if
+    ]]></command>
+    <inputs>
+        <conditional name="convert_type">
+            <param name="convert_command" type="select" label="Conversion method">
+                <option value="text_meta_to_json_meta">Text metadata to JSON</option>
+                <option value="excel_meta_to_json_meta">Excel metadata to JSON</option>
+                <option value="microhaplotype_table_to_json_file">Microhaplotype table to JSON</option>
+                <option value="terra_amp_output_to_json">Terra amplicon output to JSON</option>
+            </param>
+            <when value="text_meta_to_json_meta">
+                <param name="input_file" type="data" format="tabular,csv,tsv" label="Input text file" help="Tab-delimited or comma-delimited metadata file"/>
+                <expand macro="delim_select"/>
+                <param argument="--index_col_name" type="text" value="" label="Index column name" help="Optional. If supplied, output will be a dict keyed by this column. Otherwise a list."/>
+            </when>
+            <when value="excel_meta_to_json_meta">
+                <param name="input_file" type="data" format="xlsx" label="Input Excel file" help="XLSX metadata file"/>
+                <param argument="--sheet" type="text" value="" label="Sheet name" help="Name of the sheet to convert. If not provided, defaults to the first sheet."/>
+                <param argument="--index_col_name" type="text" value="" label="Index column name" help="Optional. If supplied, output will be a dict keyed by this column. Otherwise a list."/>
+            </when>
+            <when value="microhaplotype_table_to_json_file">
+                <param name="input_file" type="data" format="tabular,csv,tsv" label="Input microhaplotype table" help="Tab-delimited or comma-delimited table with microhaplotype data"/>
+                <param argument="--bioinfo_name" type="text" value="" label="Bioinformatics name" help="Identifier of the bioinformatics processing run"/>
+                <param argument="--library_sample_name_col" type="text" value="library_sample_name" label="Library sample name column"/>
+                <param argument="--target_name_col" type="text" value="target_name" label="Target name column"/>
+                <param argument="--seq_col" type="text" value="asv" label="Sequence column"/>
+                <param argument="--reads_col" type="text" value="reads" label="Reads column"/>
+                <param argument="--additional_cols" type="text" value="" label="Additional columns" help="Comma-separated additional column names to add to detected haplotypes table. Use col_name:new_name to rename."/>
+                <expand macro="delim_select"/>
+            </when>
+            <when value="terra_amp_output_to_json">
+                <param name="input_file" type="data" format="xlsx" label="Input Terra amplicon output file" help="XLSX file with gt, asv_table, and asv_seqs sheets"/>
+                <param argument="--gt_sheet" type="text" value="gt" label="Genotype sheet name"/>
+                <param argument="--asv_table_sheet" type="text" value="asv_table" label="ASV table sheet name"/>
+                <param argument="--asv_seqs_sheet" type="text" value="asv_seqs" label="ASV sequences sheet name"/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output_json" format="json"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <conditional name="convert_type">
+                <param name="convert_command" value="microhaplotype_table_to_json_file"/>
+                <param name="input_file" ftype="tabular" value="test_pmo_table.tsv"/>
+                <param name="delim" value="tab"/>
+            </conditional>
+            <output name="output_json" ftype="json">
+                <assert_contents>
+                    <has_text text="pmo_header"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@HELP_PREAMBLE@
+
+**Convert to PMO JSON**
+
+Converts external file formats to PMO-compatible JSON:
+
+- **Text metadata to JSON**: Convert a tab-delimited or comma-delimited metadata table to JSON format. Optionally specify an index column name to produce a dict instead of a list.
+- **Excel metadata to JSON**: Convert a sheet from an XLSX metadata file to JSON. Optionally specify a sheet name and index column.
+- **Microhaplotype table to JSON**: Convert a microhaplotype table (with library sample, target, sequence, and reads columns) to JSON format.
+- **Terra amplicon output to JSON**: Convert Terra amplicon output XLSX (with genotype, ASV table, and ASV sequence sheets) to JSON.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

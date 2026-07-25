@@ -1,0 +1,86 @@
+<tool name="pmotools extract_insert" id="pmotools_extract_insert" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Extract insert or reference sequences of panels from a PMO</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python ${extract_type.extract_command}
+  --file '$input_pmo'
+  --output '$output'
+  --overwrite
+  #if str($extract_type.extract_command) == "extract_insert_of_panels":
+    $extract_type.add_ref_seqs
+  #end if
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+        <conditional name="extract_type">
+            <param name="extract_command" type="select" label="Extraction method">
+                <option value="extract_insert_of_panels">Extract insert locations (BED-like)</option>
+                <option value="extract_refseq_of_inserts_of_panels">Extract reference sequences of inserts</option>
+            </param>
+            <when value="extract_insert_of_panels">
+                <param argument="--add_ref_seqs" type="boolean" truevalue="--add_ref_seqs" falsevalue="" checked="false" label="Add reference sequences" help="Add ref_seq column to the output"/>
+            </when>
+            <when value="extract_refseq_of_inserts_of_panels"/>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="output" format="tabular"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
+            <conditional name="extract_type">
+                <param name="extract_command" value="extract_insert_of_panels"/>
+                <param name="add_ref_seqs" value="false"/>
+            </conditional>
+            <output name="output" ftype="tabular">
+                <assert_contents>
+                    <has_text text="#chrom"/>
+                    <has_text text="start"/>
+                    <has_text text="end"/>
+                    <has_text text="target_id"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
+            <conditional name="extract_type">
+                <param name="extract_command" value="extract_insert_of_panels"/>
+                <param name="add_ref_seqs" value="true"/>
+            </conditional>
+            <output name="output" ftype="tabular">
+                <assert_contents>
+                    <has_text text="ref_seq"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
+            <conditional name="extract_type">
+                <param name="extract_command" value="extract_refseq_of_inserts_of_panels"/>
+            </conditional>
+            <output name="output" ftype="tabular">
+                <assert_contents>
+                    <has_text text="target_id"/>
+                    <has_text text="ref_seq"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@HELP_PREAMBLE@
+
+**Extract Insert Sequences**
+
+Extracts insert-related information from the panel/target sections of a PMO file:
+
+- **Extract insert locations**: Produces a BED-like tabular file with columns: `#chrom`, `start`, `end`, `target_id`, `length`, `strand`, `extra_info`. Optionally add a `ref_seq` column with reference sequences.
+- **Extract reference sequences of inserts**: Produces a tabular file with columns `target_id` and `ref_seq` containing the reference sequence for each target insert.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

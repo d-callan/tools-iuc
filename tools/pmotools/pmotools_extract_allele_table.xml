@@ -1,0 +1,98 @@
+<tool name="pmotools extract_allele_table" id="pmotools_extract_allele_table" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Extract allele table from a PMO for tools like dcifer or moire</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pmotools-python extract_allele_table
+  --file '$input_pmo'
+  --output '$output_table'
+  --delim '$delim'
+  --overwrite
+  $skip_validation
+  #if $allele_freqs:
+    --allele_freqs_output '$output_freqs'
+  #end if
+  #if str($specimen_info_meta_fields):
+    --specimen_info_meta_fields '$specimen_info_meta_fields'
+  #end if
+  #if str($library_sample_info_meta_fields):
+    --library_sample_info_meta_fields '$library_sample_info_meta_fields'
+  #end if
+  #if str($microhap_fields):
+    --microhap_fields '$microhap_fields'
+  #end if
+  #if str($representative_haps_fields):
+    --representative_haps_fields '$representative_haps_fields'
+  #end if
+  --default_base_col_names '$default_base_col_names'
+    ]]></command>
+    <inputs>
+        <expand macro="input_pmo"/>
+        <expand macro="delim_select"/>
+        <param argument="--skip_validation" type="boolean" truevalue="--skip_validation" falsevalue="" checked="false" label="Skip PMO validation"/>
+        <param name="allele_freqs" type="boolean" checked="false" label="Also output allele frequencies table" help="If enabled, an additional tabular file with allele counts and frequencies will be produced"/>
+        <param argument="--specimen_info_meta_fields" type="text" value="" label="Specimen metadata fields to include" help="Comma-separated metadata field names from the specimen table to include in output"/>
+        <param argument="--library_sample_info_meta_fields" type="text" value="" label="Library sample metadata fields to include" help="Comma-separated metadata field names from the library sample table to include in output"/>
+        <param argument="--microhap_fields" type="text" value="" label="Microhaplotype fields to include" help="Comma-separated additional fields from the detected microhaplotype object to include"/>
+        <param argument="--representative_haps_fields" type="text" value="" label="Representative haplotype fields to include" help="Comma-separated additional fields from the representative object to include"/>
+        <param argument="--default_base_col_names" type="text" value="library_sample_name,target_name,mhap_id" label="Default base column names" help="Must be exactly 3 comma-separated column names"/>
+    </inputs>
+    <outputs>
+        <data name="output_table" format="tabular"/>
+        <data name="output_freqs" format="tabular" label="${tool.name} allele frequencies on ${on_string}">
+            <filter>allele_freqs</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
+            <param name="delim" value="tab"/>
+            <param name="skip_validation" value="true"/>
+            <output name="output_table" ftype="tabular">
+                <assert_contents>
+                    <has_text text="library_sample_name"/>
+                    <has_text text="target_name"/>
+                    <has_text text="mhap_id"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="input_pmo" ftype="json" value="test_pmo_full.json"/>
+            <param name="delim" value="tab"/>
+            <param name="skip_validation" value="true"/>
+            <param name="allele_freqs" value="true"/>
+            <output name="output_table" ftype="tabular">
+                <assert_contents>
+                    <has_text text="library_sample_name"/>
+                </assert_contents>
+            </output>
+            <output name="output_freqs" ftype="tabular">
+                <assert_contents>
+                    <has_text text="target_name"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@HELP_PREAMBLE@
+
+**Extract Allele Table**
+
+Extracts an allele table from a PMO file for use with downstream tools such as dcifer or moire. Each row represents a detected microhaplotype allele with its associated library sample and target.
+
+Options:
+
+- **Skip validation**: Skip JSON schema validation of the input PMO (faster, but no error checking)
+- **Allele frequencies table**: Also produce a secondary table of allele counts and frequencies
+- **Specimen metadata fields**: Include selected specimen metadata fields as additional columns
+- **Library sample metadata fields**: Include selected library sample metadata fields as additional columns
+- **Microhaplotype fields**: Include additional fields from the detected microhaplotype object
+- **Representative haplotype fields**: Include additional fields from the representative haplotype object
+- **Default base column names**: The three required base columns (default: `library_sample_name,target_name,mhap_id`)
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

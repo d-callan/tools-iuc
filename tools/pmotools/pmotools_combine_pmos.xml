@@ -1,0 +1,45 @@
+<tool name="pmotools combine_pmos" id="pmotools_combine_pmos" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Combine multiple PMOs of the same panel into one</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+#set $pmo_files_list = []
+#for $pmo in $input_pmos:
+    #silent $pmo_files_list.append(str($pmo))
+#end for
+pmotools-python combine_pmos
+  --pmo_files '#echo ",".join($pmo_files_list)#'
+  --output '$output_pmo'
+  --overwrite
+    ]]></command>
+    <inputs>
+        <param name="input_pmos" type="data" format="json" multiple="true" min="2" label="PMO files" help="Select at least 2 PMO files from the same amplicon panel to combine"/>
+    </inputs>
+    <outputs>
+        <data name="output_pmo" format="json"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input_pmos" ftype="json" value="minimum_pmo_example.json,minimum_pmo_example_2.json"/>
+            <output name="output_pmo" ftype="json">
+                <assert_contents>
+                    <has_text text="pmo_header"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@HELP_PREAMBLE@
+
+**Combine PMOs**
+
+Combines multiple PMO files from the same amplicon panel into a single PMO. All input PMOs must be from the same panel. The tool merges specimens, library samples, and detected microhaplotypes.
+
+Select at least 2 PMO files to combine.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
