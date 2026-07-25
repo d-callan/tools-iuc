@@ -1,0 +1,80 @@
+<tool id="mumemto_viz" name="mumemto viz" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Visualize pangenome synteny from multi-MUM output</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## Symlink mums and lengths files to matching prefixes so viz can find them
+ln -s '$mum_file' viz_input.mums &&
+ln -s '$lengths_file' viz_input.lengths &&
+mumemto viz
+-m viz_input.mums
+-l viz_input.lengths
+-o 'viz_output'
+#if $interactive:
+  --interactive
+#end if
+&&
+## Rename outputs to Galaxy-expected names
+#if $interactive:
+  mv 'viz_output.html' '$interactive_output'
+#else:
+  mv 'viz_output.png' '$plot_output'
+#end if
+    ]]></command>
+    <inputs>
+        <param name="mum_file" type="data" format="txt,tabular" label="Input .mums file" help="Multi-MUM output from mumemto find (strict or partial multi-MUMs only)"/>
+        <param name="lengths_file" type="data" format="tabular,txt" label="Input .lengths file" help="Sequence lengths file from the same mumemto find run"/>
+        <param name="interactive" type="boolean" truevalue="--interactive" falsevalue="" checked="false" label="Generate interactive plotly plot" help="Experimental: produces an interactive HTML plot instead of a static PNG"/>
+    </inputs>
+    <outputs>
+        <data name="plot_output" format="png">
+            <filter>not interactive</filter>
+        </data>
+        <data name="interactive_output" format="html" label="${tool.name} interactive plot on ${on_string}">
+            <filter>interactive</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="mum_file" value="viz_test.mums" ftype="txt"/>
+            <param name="lengths_file" value="viz_test.lengths" ftype="tabular"/>
+            <output name="plot_output" ftype="png">
+                <assert_contents>
+                    <has_image_channels channels="4"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# mumemto viz
+
+Generates synteny visualization plots from multi-MUM output files.
+
+## Input
+
+Provide a `.mums` file and the corresponding `.lengths` file, both produced by
+**mumemto find**. The visualization shows the positions of multi-MUMs across all
+input sequences, highlighting regions of synteny and potential structural variation.
+
+Only strict and partial multi-MUMs are supported for visualization (a `.mums` file
+is required, not a `.mems` file).
+
+## Options
+
+- **Interactive plot:** Generate an interactive plotly HTML plot instead of a
+  static PNG (experimental). This allows zooming, panning, and hovering over
+  individual matches for detailed inspection.
+
+## Output
+
+- A static PNG synteny plot (default), or
+- An interactive HTML plot (with interactive mode enabled).
+
+For detailed usage, see the [Mumemto wiki](https://github.com/vikshiv/mumemto/wiki).
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

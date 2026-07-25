@@ -1,0 +1,92 @@
+<tool id="mumemto_merge" name="mumemto merge" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Merge multi-MUMs from partitioned runs</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <expand macro="stdio"/>
+    <command detect_errors="aggressive"><![CDATA[
+## For each partition: symlink FASTA inputs, run mumemto find -M to generate partition outputs
+#set $partition_prefixes = []
+#for $i, $partition in enumerate($partitions):
+  #set $prefix = 'part' + str($i)
+  #for $j, $fasta in enumerate($partition.input_fastas):
+    ln -s '$fasta' ${prefix}_input${j}.fa &&
+  #end for
+  mumemto
+  -o '${prefix}'
+  -M
+  -f 1
+  #for $j in range(len($partition.input_fastas)):
+    ${prefix}_input${j}.fa
+  #end for
+  &&
+  #set $dummy = $partition_prefixes.append($prefix + '.thresh')
+#end for
+## Merge all partition outputs
+mumemto merge
+#for $p in $partition_prefixes:
+  '$p'
+#end for
+-o 'merged.mums'
+&&
+mv 'merged.mums' '$merged_mums'
+    ]]></command>
+    <inputs>
+        <repeat name="partitions" title="Partitions" min="2" help="Two or more partitions, each consisting of one or more FASTA files. Each partition will be processed independently with mumemto find -M, then the results will be merged. The first sequence in each partition should be the same anchor sequence for merging to work correctly.">
+            <param name="input_fastas" type="data" format="fasta,fasta.gz" multiple="true" label="Input FASTA file(s) for this partition" help="One or more FASTA files (one per genome/assembly) for this partition"/>
+        </repeat>
+    </inputs>
+    <outputs>
+        <data name="merged_mums" format="txt"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <repeat name="partitions">
+                <param name="input_fastas" value="genome1.fa" ftype="fasta"/>
+                <param name="input_fastas" value="genome2.fa" ftype="fasta"/>
+            </repeat>
+            <repeat name="partitions">
+                <param name="input_fastas" value="genome1.fa" ftype="fasta"/>
+                <param name="input_fastas" value="genome3.fa" ftype="fasta"/>
+            </repeat>
+            <output name="merged_mums" ftype="txt">
+                <assert_contents>
+                    <has_n_columns n="3"/>
+                    <has_text text="+"/>
+                    <has_text text=","/>
+                    <has_n_lines n="3"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+# mumemto merge
+
+Merges multi-MUMs from multiple partitioned mumemto runs into a single
+`.mums` file. This is useful when processing very large pangenome collections
+that have been split into partitions for parallel processing.
+
+## Input
+
+Provide two or more partitions, each consisting of one or more FASTA files
+(one per genome/assembly). Each partition is processed independently using
+`mumemto find -M` (string-based merging mode), and the results are then merged.
+
+For merging to work correctly, the **first sequence** in each partition must
+be the same (the "anchor" sequence). This shared sequence serves as the
+reference for aligning MUMs across partitions.
+
+## Output
+
+A single merged `.mums` file containing all multi-MUMs from the input
+partitions, identical to what mumemto would produce if run on the union of
+all partitions.
+
+**Note:** Merging is currently limited to strict multi-MUMs.
+
+For detailed usage, see the [Mumemto wiki](https://github.com/vikshiv/mumemto/wiki).
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
