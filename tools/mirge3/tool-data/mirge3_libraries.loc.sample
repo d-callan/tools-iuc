@@ -1,0 +1,10 @@
+# miRge3.0 organism annotation libraries
+# This file configures the miRge3.0 organism libraries data table.
+# Each line is tab-separated with the following columns:
+#   value  - a unique identifier (e.g., "nematode")
+#   dbkey  - the genome build key (e.g., "ce10")
+#   organism - the organism name as used by miRge3.0 -on (e.g., "nematode")
+#   path   - the path to the organism library directory (parent of the organism folder)
+#
+# Example:
+# nematode	ce10	nematode	/data/mirge3_Lib
