@@ -1,0 +1,3 @@
+Gene	sample1	sample2	Evidence_Sample_Count	Candidate_Sample_Count	Exact_Sample_Count	Profile_Sample_Count	Strict_Sample_Count
+resfinder_gene_1	EXACT_ALLELE_DETECTED	EXACT_ALLELE_DETECTED	2	2	2	0	2
+resfinder_gene_2	CANDIDATE_ALLELE_DETECTED	ALLELE_LIKE	2	1	0	0	1

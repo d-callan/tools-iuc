@@ -1,0 +1,11 @@
+qseqid	sseqid	pident	length	mismatch	gapopen	qstart	qend	sstart	send	evalue	bitscore	qlen	slen
+read_1	resfinder_gene_1	100.000	80	0	0	1	80	1	80	1e-40	160.0	80	560
+read_2	resfinder_gene_1	100.000	80	0	0	1	80	81	160	1e-40	160.0	80	560
+read_3	resfinder_gene_1	100.000	80	0	0	1	80	161	240	1e-40	160.0	80	560
+read_4	resfinder_gene_1	100.000	80	0	0	1	80	241	320	1e-40	160.0	80	560
+read_5	resfinder_gene_1	100.000	80	0	0	1	80	321	400	1e-40	160.0	80	560
+read_6	resfinder_gene_1	100.000	80	0	0	1	80	401	480	1e-40	160.0	80	560
+read_7	resfinder_gene_1	100.000	80	0	0	1	80	481	560	1e-40	160.0	80	560
+read_4	resfinder_gene_2	98.750	80	1	0	1	80	1	80	1e-38	155.0	80	420
+read_5	resfinder_gene_2	98.750	80	1	0	1	80	81	160	1e-38	155.0	80	420
+read_6	resfinder_gene_2	98.750	80	1	0	1	80	161	240	1e-38	155.0	80	420

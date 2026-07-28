@@ -1,0 +1,191 @@
+<tool id="amrfior" name="AMRfior" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>AMR gene detection with built-in CARD/ResFinder/NCBI databases</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements">
+        <requirement type="package" version="2.1.13">diamond</requirement>
+        <requirement type="package" version="2.5.4">bowtie2</requirement>
+        <requirement type="package" version="0.7.18">bwa</requirement>
+        <requirement type="package" version="2.30">minimap2</requirement>
+        <requirement type="package" version="1.4">seqtk</requirement>
+        <requirement type="package" version="2.8">pigz</requirement>
+    </expand>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p output_dir &&
+
+#if 'user-provided' in $databases and str($user_db_path):
+    mkdir -p user_db_dir/diamond user_db_dir/blast_dna user_db_dir/blast_aa user_db_dir/bowtie2 user_db_dir/bwa user_db_dir/minimap2 &&
+    diamond makedb --in '$user_db_aa' --db user_db_dir/diamond/all_aa_diamonddb.dmnd --threads \${GALAXY_SLOTS:-4} &&
+    makeblastdb -in '$user_db_dna' -dbtype nucl -out user_db_dir/blast_dna/all_blastdb -parse_seqids &&
+    makeblastdb -in '$user_db_aa' -dbtype prot -out user_db_dir/blast_aa/all_aa_blastdb -parse_seqids &&
+    bowtie2-build --threads \${GALAXY_SLOTS:-4} '$user_db_dna' user_db_dir/bowtie2/all_bowtie2db &&
+    bwa index -p user_db_dir/bwa/all_bwadb '$user_db_dna' &&
+    minimap2 -d user_db_dir/minimap2/all_minimap2db '$user_db_dna' &&
+#end if
+
+#if $sequence_type == 'Paired-FASTQ':
+    #set $input_str = $input + ',' + $input_r2
+#else:
+    #set $input_str = $input
+#end if
+
+AMRfior
+    -i '$input_str'
+    -st '$sequence_type'
+    -o output_dir
+    -t \${GALAXY_SLOTS:-4}
+
+    #if $tools:
+        --tools #echo ' '.join($tools)#
+    #end if
+
+    --databases #echo ' '.join($databases)#
+
+    #if 'user-provided' in $databases and str($user_db_path):
+        --user-db-path user_db_dir
+    #end if
+
+    #if str($sec_thresholds.report_fasta):
+        --report-fasta '$sec_thresholds.report_fasta'
+    #end if
+
+    #if $sequence_type == 'Genes-FASTA':
+        --genes-type '$genes_type'
+    #end if
+
+    --q-min-cov $sec_thresholds.q_min_cov
+    --q-min-id $sec_thresholds.q_min_id
+    --d-min-cov $sec_thresholds.d_min_cov
+    --d-min-id $sec_thresholds.d_min_id
+    --d-min-depth $sec_thresholds.d_min_depth
+    --d-min-reads $sec_thresholds.d_min_reads
+    --detection-system '$sec_thresholds.detection_system'
+
+    #if $sec_advanced.mode == 'dna-only':
+        --dna-only
+    #elif $sec_advanced.mode == 'protein-only':
+        --protein-only
+    #end if
+
+    #if str($sec_advanced.sensitivity) != 'default':
+        --sensitivity '$sec_advanced.sensitivity'
+    #end if
+
+    --minimap2-preset '$sec_advanced.minimap2_preset'
+    --blastx-task '$sec_advanced.blastx_task'
+
+    #if str($sec_advanced.evalue):
+        -e $sec_advanced.evalue
+    #end if
+
+    #if $sec_advanced.fastp_trim and $sequence_type == 'Paired-FASTQ':
+        --fastp-trim
+    #end if
+
+    #for $tp in $sec_advanced.tool_param:
+        --tool-param '$tp.tool_name=$tp.params'
+    #end for
+
+    $sec_advanced.verbose
+
+&& cd output_dir
+&& det=\$(find . -name '*_detection_matrix.tsv' ! -name '*combined*' | head -1) && if [ -n "\$det" ]; then mv "\$det" '$detection_matrix'; fi
+&& evi=\$(find . -name '*_evidence_matrix.tsv' ! -name '*combined*' | head -1) && if [ -n "\$evi" ]; then mv "\$evi" '$evidence_matrix'; fi
+&& evs=\$(find . -name '*_evidence_summary.tsv' | head -1) && if [ -n "\$evs" ]; then mv "\$evs" '$evidence_summary'; fi
+&& all=\$(find . -name '*_allele_resolution.tsv' | head -1) && if [ -n "\$all" ]; then mv "\$all" '$allele_resolution'; fi
+#if str($sec_thresholds.report_fasta):
+    && rep=\$(find . -name '*_report.fasta' | head -1) && if [ -n "\$rep" ]; then mv "\$rep" '$report_fasta'; fi
+#end if
+&& cd .. && tar -czf '$results_archive' output_dir
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Input sequences" help="FASTA or FASTQ file (.gz accepted). For Paired-FASTQ, provide R1 here"/>
+        <param name="input_r2" type="data" format="fastq,fastq.gz" optional="true" label="R2 mate (Paired-FASTQ only)" help="Second read file for paired-end FASTQ input"/>
+        <param name="sequence_type" type="select" label="Sequence type" help="Specify the input type: Single-FASTA, Paired-FASTQ, or Genes-FASTA">
+            <option value="Single-FASTA" selected="true">Single-FASTA</option>
+            <option value="Paired-FASTQ">Paired-FASTQ</option>
+            <option value="Genes-FASTA">Genes-FASTA</option>
+        </param>
+        <param name="genes_type" type="select" label="Genes type (Genes-FASTA only)" help="Required when sequence type is Genes-FASTA: DNA or amino-acid sequences">
+            <option value="dna" selected="true">DNA</option>
+            <option value="aa">Amino acid (AA)</option>
+        </param>
+        <param name="databases" type="select" multiple="true" label="AMR databases" help="Select which pre-packaged AMR databases to use. CARD and ResFinder are used by default. The NCBI AMR database is also available. Select 'user-provided' to supply custom databases">
+            <option value="resfinder" selected="true">ResFinder</option>
+            <option value="card" selected="true">CARD</option>
+            <option value="ncbi">NCBI AMR</option>
+            <option value="user-provided">User-provided</option>
+        </param>
+        <param name="user_db_path" type="text" value="" label="User-provided database path" help="Required when 'user-provided' is selected. Path to a database directory built with build_database.sh"/>
+        <param name="user_db_dna" type="data" format="fasta" optional="true" label="User-provided DB DNA FASTA" help="DNA sequences for the user-provided database (when 'user-provided' is selected)"/>
+        <param name="user_db_aa" type="data" format="fasta" optional="true" label="User-provided DB AA FASTA" help="Amino acid sequences for the user-provided database (when 'user-provided' is selected)"/>
+        <expand macro="tools_select"/>
+        <section name="sec_thresholds" expanded="false" title="Detection Thresholds">
+            <expand macro="threshold_params"/>
+            <expand macro="detection_system_select"/>
+            <expand macro="report_fasta_select"/>
+        </section>
+        <expand macro="advanced_options"/>
+    </inputs>
+    <outputs>
+        <data name="detection_matrix" format="tabular" label="${tool.name} detection matrix on ${on_string}"/>
+        <data name="evidence_matrix" format="tabular" label="${tool.name} evidence matrix on ${on_string}"/>
+        <data name="evidence_summary" format="tabular" label="${tool.name} evidence summary on ${on_string}"/>
+        <data name="allele_resolution" format="tabular" label="${tool.name} allele resolution on ${on_string}"/>
+        <data name="report_fasta" format="fasta" label="${tool.name} report FASTA on ${on_string}">
+            <filter>sec_thresholds['report_fasta']</filter>
+        </data>
+        <data name="results_archive" format="tar.gz" label="${tool.name} results archive on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="5">
+            <param name="input" value="sample_single.fasta" ftype="fasta"/>
+            <param name="sequence_type" value="Single-FASTA"/>
+            <param name="databases" value="user-provided"/>
+            <param name="user_db_path" value="user_db_dir"/>
+            <param name="user_db_dna" value="db_dna.fasta" ftype="fasta"/>
+            <param name="user_db_aa" value="db_aa.fasta" ftype="fasta"/>
+            <param name="tools" value="diamond"/>
+            <section name="sec_thresholds">
+                <param name="q_min_cov" value="40.0"/>
+                <param name="q_min_id" value="80.0"/>
+                <param name="d_min_cov" value="80.0"/>
+                <param name="d_min_id" value="80.0"/>
+                <param name="d_min_depth" value="1"/>
+                <param name="d_min_reads" value="1"/>
+            </section>
+            <output name="detection_matrix" file="user-provided-db_detection_matrix.tsv" ftype="tabular"/>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**AMRfior** — AMR gene detection with built-in databases
+
+This tool runs the GeneFíor pipeline with pre-packaged AMR databases installed
+via bioconda. The available databases are:
+
+- **ResFinder** — Antimicrobial resistance genes (selected by default)
+- **CARD** — Comprehensive Antibiotic Resistance Database (selected by default)
+- **NCBI AMR** — NCBI's AMR reference gene database
+- **User-provided** — Custom database (built from provided DNA and AA FASTA files)
+
+No `--db-path` is required when using the built-in databases. The CARD,
+ResFinder, and NCBI databases are installed as part of the bioconda package
+and are automatically discovered at runtime.
+
+**Outputs:**
+
+- **Detection matrix** — Binary presence/absence per gene and tool
+- **Evidence matrix** — Qualified per-tool evidence statuses
+- **Evidence summary** — Evidence, candidate-allele, and exact-allele counts
+- **Allele resolution** — Family-level top candidate and competing alleles
+- **Report FASTA** *(optional)* — Sequences passing detection thresholds
+- **Results archive** — Full output directory (tar.gz), usable as input to
+  Recompute, Gene-Stats, or Combine
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

@@ -1,0 +1,175 @@
+<tool id="genefior_gene_stats" name="GeneFior-Gene-Stats" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Generate gene-level coverage visualisations and read exports</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements">
+        <requirement type="package" version="2.1.13">diamond</requirement>
+    </expand>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p input_dir/raw_outputs output_dir &&
+
+#if $sec_raw_outputs.diamond_results:
+    ln -s '$sec_raw_outputs.diamond_results' 'input_dir/raw_outputs/user-provided-db_diamond_results.tsv' &&
+#end if
+#if $sec_raw_outputs.blastn_results:
+    ln -s '$sec_raw_outputs.blastn_results' 'input_dir/raw_outputs/user-provided-db_blastn_results.tsv' &&
+#end if
+#if $sec_raw_outputs.blastx_results:
+    ln -s '$sec_raw_outputs.blastx_results' 'input_dir/raw_outputs/user-provided-db_blastx_results.tsv' &&
+#end if
+#if $sec_raw_outputs.blastp_results:
+    ln -s '$sec_raw_outputs.blastp_results' 'input_dir/raw_outputs/user-provided-db_blastp_results.tsv' &&
+#end if
+#if $sec_raw_outputs.bowtie2_results:
+    ln -s '$sec_raw_outputs.bowtie2_results' 'input_dir/raw_outputs/user-provided-db_bowtie2_results_sorted.bam' &&
+#end if
+#if $sec_raw_outputs.bwa_results:
+    ln -s '$sec_raw_outputs.bwa_results' 'input_dir/raw_outputs/user-provided-db_bwa_results_sorted.bam' &&
+#end if
+#if $sec_raw_outputs.minimap2_results:
+    ln -s '$sec_raw_outputs.minimap2_results' 'input_dir/raw_outputs/user-provided-db_minimap2_results_sorted.bam' &&
+#end if
+#if $sec_raw_outputs.detection_matrix:
+    ln -s '$sec_raw_outputs.detection_matrix' 'input_dir/user-provided-db_detection_matrix.tsv' &&
+#end if
+#if $sec_raw_outputs.evidence_matrix:
+    ln -s '$sec_raw_outputs.evidence_matrix' 'input_dir/user-provided-db_evidence_matrix.tsv' &&
+#end if
+#if $sec_raw_outputs.run_parameters:
+    ln -s '$sec_raw_outputs.run_parameters' 'input_dir/run_parameters.json' &&
+#end if
+
+GeneFior-gene-stats
+    -i input_dir
+    -o output_dir
+
+    #if str($genes):
+        -g '$genes'
+    #end if
+
+    --databases #echo ' '.join($databases)#
+
+    --tools #echo ' '.join($tools)#
+
+    #if str($gene_selection):
+        --gene-selection '$gene_selection'
+    #end if
+
+    #if $all_genes:
+        --all-genes
+    #end if
+
+    #if $ref_fasta:
+        --ref-fasta '$ref_fasta'
+    #end if
+
+    #if $query_fasta:
+        --query-fasta '$query_fasta'
+    #end if
+
+    $plot_per_tool
+    $report_read_names
+    $report_fasta
+    --read-selection '$read_selection'
+
+&& cd output_dir && tar -czf '$results_archive' . && cd ..
+    ]]></command>
+    <inputs>
+        <section name="sec_raw_outputs" expanded="true" title="GeneFíor Results (Raw Outputs)">
+            <param name="run_parameters" type="data" format="json" optional="true" label="Run parameters JSON" help="The run_parameters.json from the original GeneFíor run"/>
+            <param name="detection_matrix" type="data" format="tabular" optional="true" label="Detection matrix TSV" help="The *_detection_matrix.tsv from the original run"/>
+            <param name="evidence_matrix" type="data" format="tabular" optional="true" label="Evidence matrix TSV" help="The *_evidence_matrix.tsv from the original run"/>
+            <param name="diamond_results" type="data" format="tabular" optional="true" label="DIAMOND results TSV" help="DIAMOND results TSV file from the original run"/>
+            <param name="blastn_results" type="data" format="tabular" optional="true" label="BLASTn results TSV" help="BLASTn results TSV file from the original run"/>
+            <param name="blastx_results" type="data" format="tabular" optional="true" label="BLASTx results TSV" help="BLASTx results TSV file from the original run"/>
+            <param name="blastp_results" type="data" format="tabular" optional="true" label="BLASTp results TSV" help="BLASTp results TSV file from the original run"/>
+            <param name="bowtie2_results" type="data" format="bam" optional="true" label="Bowtie2 sorted BAM" help="Bowtie2 sorted BAM file from the original run"/>
+            <param name="bwa_results" type="data" format="bam" optional="true" label="BWA sorted BAM" help="BWA sorted BAM file from the original run"/>
+            <param name="minimap2_results" type="data" format="bam" optional="true" label="Minimap2 sorted BAM" help="Minimap2 sorted BAM file from the original run"/>
+        </section>
+        <param name="genes" type="text" value="" label="Gene names" help="Comma-separated gene names (full names) or path to a file with gene names (one per line)"/>
+        <param name="all_genes" type="boolean" truevalue="--all-genes" falsevalue="" checked="false" label="Include all genes" help="Include all genes found in raw outputs (default: genes with meaningful evidence)"/>
+        <param name="gene_selection" type="select" label="Gene selection mode" help="Select genes automatically from qualified evidence outputs">
+            <option value="" selected="true">Default (evidence genes)</option>
+            <option value="evidence">Evidence (threshold-passing)</option>
+            <option value="candidate">Candidate allele genes</option>
+            <option value="exact">Exact allele genes</option>
+            <option value="candidate-or-exact">Candidate or exact</option>
+            <option value="all">All genes</option>
+        </param>
+        <param name="databases" type="select" multiple="true" label="Databases" help="Database(s) to interrogate. Use 'user-provided-db' for GeneFior runs, or 'resfinder'/'card'/'ncbi' for AMRfior runs">
+            <option value="user-provided-db" selected="true">user-provided-db</option>
+            <option value="resfinder">ResFinder</option>
+            <option value="card">CARD</option>
+            <option value="ncbi">NCBI AMR</option>
+            <option value="all">All (auto-discover)</option>
+        </param>
+        <param name="tools" type="select" multiple="true" label="Tools to interrogate" help="Which alignment tool results to visualise">
+            <option value="blastn" selected="true">BLASTn</option>
+            <option value="blastx" selected="true">BLASTx</option>
+            <option value="blastp" selected="true">BLASTp</option>
+            <option value="diamond" selected="true">DIAMOND</option>
+            <option value="bowtie2" selected="true">Bowtie2</option>
+            <option value="bwa" selected="true">BWA</option>
+            <option value="minimap2" selected="true">Minimap2</option>
+            <option value="all">All tools</option>
+        </param>
+        <param name="ref_fasta" type="data" format="fasta" optional="true" label="Reference FASTA" help="Plain-text reference FASTA file for variant calling (optional)"/>
+        <param name="query_fasta" type="data" format="fasta,fastq,fasta.gz,fastq.gz" optional="true" label="Query FASTA" help="Original query FASTA/FASTQ file. Required for FASTA read export from BLAST/DIAMOND results"/>
+        <param name="plot_per_tool" type="boolean" truevalue="--plot-per-tool" falsevalue="" checked="false" label="Generate per-tool plots" help="Generate individual per-tool coverage PNGs in addition to combined comparison plots"/>
+        <param name="report_read_names" type="boolean" truevalue="--report-read-names" falsevalue="" checked="false" label="Report read names" help="Write deduplicated read-name files for selected genes, databases, and tools"/>
+        <param name="report_fasta" type="boolean" truevalue="--report-fasta" falsevalue="" checked="false" label="Report read FASTA" help="Write deduplicated read FASTA files for selected genes, databases, and tools"/>
+        <param name="read_selection" type="select" label="Read selection" help="Which read-gene matches to export">
+            <option value="passing" selected="true">Passing (only mappings passing original query thresholds)</option>
+            <option value="all">All (all raw mappings)</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="results_archive" format="tar.gz" label="${tool.name} results archive on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <section name="sec_raw_outputs">
+                <param name="diamond_results" value="user-provided-db_diamond_results.tsv" ftype="tabular"/>
+                <param name="detection_matrix" value="user-provided-db_detection_matrix.tsv" ftype="tabular"/>
+                <param name="evidence_matrix" value="user-provided-db_evidence_matrix.tsv" ftype="tabular"/>
+            </section>
+            <param name="genes" value="resfinder_gene_1"/>
+            <param name="databases" value="user-provided-db"/>
+            <param name="tools" value="diamond"/>
+            <output name="results_archive" ftype="tar.gz">
+                <assert_contents>
+                    <has_size value="100" delta="100000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+@GENEFIOR_HELP@
+
+**GeneFior-Gene-Stats** — Gene-level coverage visualisations
+
+This tool generates detailed coverage visualisations and reports from GeneFíor
+results. Provide the raw alignment output files from a prior GeneFíor or AMRfior
+run (BLAST/DIAMOND TSVs and/or sorted BAM files), along with the detection and
+evidence matrices.
+
+For each selected gene, database, and tool, it produces:
+
+- **Coverage text reports** — Per-position depth, gap analysis, variant calling
+- **Coverage PNG plots** — Depth across the gene with variant markers
+  *(per-tool plots require the "Generate per-tool plots" option)*
+- **Comparison reports** — Multi-tool agreement analysis
+- **Comparison PNG plots** — Coverage comparison across all tools
+
+**Read export options:**
+
+- **Report read names** — Write deduplicated read-name files per gene/tool/database
+- **Report read FASTA** — Write deduplicated read FASTA files. BLAST/DIAMOND
+  exports require the original query FASTA to be provided.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

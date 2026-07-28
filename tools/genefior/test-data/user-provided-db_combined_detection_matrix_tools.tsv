@@ -1,0 +1,3 @@
+Gene	sample1	sample2
+resfinder_gene_1	Bowtie2,BWA,Minimap2,DIAMOND-BLASTX	BLASTn,BWA,DIAMOND-BLASTX
+resfinder_gene_2	Bowtie2,Minimap2,DIAMOND-BLASTX	Bowtie2,BWA

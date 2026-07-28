@@ -1,0 +1,163 @@
+<macros>
+    <token name="@TOOL_VERSION@">0.10.1</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">genefior</requirement>
+            <yield/>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>GeneFior --version</version_command>
+    </xml>
+    <xml name="stdio">
+        <stdio>
+            <exit_code range="1:"/>
+            <exit_code range=":-1"/>
+            <regex match="Error:" source="both"/>
+            <regex match="Traceback" source="both"/>
+            <regex match="Exception:" source="both"/>
+        </stdio>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.64898/2026.05.15.724838</citation>
+        </citations>
+    </xml>
+    <!-- Shared threshold parameters for all detection tools -->
+    <xml name="threshold_params">
+        <param argument="--q-min-cov" type="float" value="40.0" min="0" max="100" label="Query min coverage %" help="Minimum query coverage threshold in percent (HSP for blastx/n)"/>
+        <param argument="--q-min-id" type="float" value="80.0" min="0" max="100" label="Query min identity %" help="Minimum query identity threshold in percent (HSP for blast/diamond)"/>
+        <param argument="--d-min-cov" type="float" value="80.0" min="0" max="100" label="Detection min coverage %" help="Minimum gene coverage threshold in percent"/>
+        <param argument="--d-min-id" type="float" value="80.0" min="0" max="100" label="Detection min identity %" help="Minimum gene identity threshold in percent"/>
+        <param argument="--d-min-depth" type="integer" value="3" min="0" label="Detection min depth" help="Minimum per-base depth required across the configured detection coverage in legacy-relaxed mode"/>
+        <param argument="--d-min-reads" type="integer" value="1" min="0" label="Detection min reads" help="Minimum number of reads required for detection"/>
+    </xml>
+    <!-- Detection system select -->
+    <xml name="detection_system_select">
+        <param argument="--detection-system" type="select" label="Detection system" help="qualified uses evidence, family/mosaic, and exact-allele resolution (default); legacy-relaxed reproduces the original direct threshold-only detector">
+            <option value="qualified" selected="true">Qualified (evidence + allele resolution)</option>
+            <option value="legacy-relaxed">Legacy relaxed (binary threshold-only)</option>
+        </param>
+    </xml>
+    <!-- Tool selection multi-select -->
+    <xml name="tools_select">
+        <param argument="--tools" type="select" multiple="true" label="Tools to run" help="Select which alignment tools to use. Default: all except blastx/blastp (they can be slow)">
+            <option value="blastn">BLASTn</option>
+            <option value="blastx">BLASTx</option>
+            <option value="blastp">BLASTp (Genes-FASTA only)</option>
+            <option value="diamond" selected="true">DIAMOND</option>
+            <option value="bowtie2" selected="true">Bowtie2</option>
+            <option value="bwa" selected="true">BWA</option>
+            <option value="minimap2" selected="true">Minimap2</option>
+            <option value="all">All tools</option>
+        </param>
+    </xml>
+    <!-- Sensitivity select -->
+    <xml name="sensitivity_select">
+        <param argument="--sensitivity" type="select" label="Sensitivity preset" help="Maps to DIAMOND and Bowtie2 preset parameters. Default leaves tools unchanged">
+            <option value="default" selected="true">Default</option>
+            <option value="very-fast">Very fast</option>
+            <option value="fast">Fast</option>
+            <option value="sensitive">Sensitive</option>
+            <option value="more-sensitive">More sensitive</option>
+            <option value="very-sensitive">Very sensitive</option>
+            <option value="ultra-sensitive">Ultra sensitive</option>
+        </param>
+    </xml>
+    <!-- Report FASTA select -->
+    <xml name="report_fasta_select">
+        <param argument="--report-fasta" type="select" label="Report FASTA" help="Output sequences that mapped to genes. Detected modes report threshold-passing reads; candidate/exact modes restrict to allele calls">
+            <option value="" selected="true">None (no FASTA output)</option>
+            <option value="all">All mapped reads</option>
+            <option value="detected">Detected (passing reads per detected gene)</option>
+            <option value="detected-all">Detected-all (all reads for evidence genes)</option>
+            <option value="evidence">Evidence (alias for detected)</option>
+            <option value="evidence-all">Evidence-all (alias for detected-all)</option>
+            <option value="candidate">Candidate (candidate allele calls)</option>
+            <option value="candidate-all">Candidate-all</option>
+            <option value="exact">Exact (exact nucleotide alleles)</option>
+            <option value="exact-all">Exact-all</option>
+        </param>
+    </xml>
+    <!-- Minimap2 preset select -->
+    <xml name="minimap2_preset_select">
+        <param argument="--minimap2-preset" type="select" label="Minimap2 preset" help="sr=short reads, map-ont=Oxford Nanopore, map-pb=PacBio, map-hifi=PacBio HiFi">
+            <option value="sr" selected="true">sr (short reads)</option>
+            <option value="map-ont">map-ont (Oxford Nanopore)</option>
+            <option value="map-pb">map-pb (PacBio)</option>
+            <option value="map-hifi">map-hifi (PacBio HiFi)</option>
+        </param>
+    </xml>
+    <!-- BLASTx task select -->
+    <xml name="blastx_task_select">
+        <param argument="--blastx-task" type="select" label="BLASTx task" help="blastx-fast is the default and faster option">
+            <option value="blastx-fast" selected="true">blastx-fast</option>
+            <option value="blastx">blastx</option>
+        </param>
+    </xml>
+    <!-- Shared advanced options section for GeneFior/AMRfior -->
+    <xml name="advanced_options">
+        <section name="sec_advanced" expanded="false" title="Advanced Options">
+            <param name="mode" type="select" label="Tool mode" help="Restrict to DNA-based or protein-based tools only">
+                <option value="all" selected="true">All (DNA + protein)</option>
+                <option value="dna-only">DNA only</option>
+                <option value="protein-only">Protein only</option>
+            </param>
+            <expand macro="sensitivity_select"/>
+            <expand macro="minimap2_preset_select"/>
+            <expand macro="blastx_task_select"/>
+            <param argument="-e" name="evalue" type="float" optional="true" label="E-value threshold" help="E-value threshold for BLASTn/x and DIAMOND. If not set, the tools' default is used"/>
+            <param name="fastp_trim" type="boolean" truevalue="--fastp-trim" falsevalue="" checked="false" label="Run fastp trimming" help="For Paired-FASTQ input, run fastp automatic adapter and quality trimming before analysis"/>
+            <param name="verbose" type="boolean" truevalue="--verbose" falsevalue="" checked="false" label="Verbose logging"/>
+            <repeat name="tool_param" title="Extra tool parameters" min="0" help="Specify extra parameters for a specific tool, e.g. diamond=--more-sensitive -e 1e-5">
+                <param name="tool_name" type="select" label="Tool name">
+                    <option value="blastn">blastn</option>
+                    <option value="blastx">blastx</option>
+                    <option value="blastp">blastp</option>
+                    <option value="diamond">diamond</option>
+                    <option value="bowtie2">bowtie2</option>
+                    <option value="bwa">bwa</option>
+                    <option value="minimap2">minimap2</option>
+                </param>
+                <param name="params" type="text" label="Tool arguments" help="Arguments to pass to the tool, e.g. --more-sensitive -e 1e-5">
+                    <validator type="regex" message="Invalid arguments">^[^"']*$</validator>
+                </param>
+            </repeat>
+        </section>
+    </xml>
+    <!-- Shared help text -->
+    <token name="@GENEFIOR_HELP@"><![CDATA[
+**What it does**
+
+GeneFíor is a multi-tool gene detection toolkit that searches DNA and protein
+sequences against reference databases using BLAST, BWA, Bowtie2, DIAMOND,
+Minimap2, and MMseqs2. It provides transparent, coverage-based validation with
+evidence qualification and allele resolution.
+
+**Subcommands available as separate Galaxy tools:**
+
+- **GeneFior** — General-purpose detection with user-provided databases
+- **AMRfior** — AMR-focused detection with pre-packaged CARD, ResFinder, and NCBI databases
+- **GeneFior-Recompute** — Recalculate detection statistics with different thresholds
+- **GeneFior-Gene-Stats** — Generate gene-level coverage visualisations and read exports
+- **GeneFior-Combine** — Combine per-sample detection matrices into combined matrices
+
+**Input types:**
+
+- **Single-FASTA:** A single FASTA file (contigs, reads, or assembled sequences)
+- **Paired-FASTQ:** Two FASTQ files (R1 and R2) from paired-end sequencing
+- **Genes-FASTA:** Full-length gene sequences (DNA or protein); skips read-mappers
+
+**Evidence qualification levels:**
+
+- `EXACT_ALLELE_DETECTED` — 100% identity, full-length coverage, allele-resolving support
+- `CANDIDATE_ALLELE_DETECTED` — ≥98% identity, full-length support, allele-resolving
+- `ALLELE_LIKE` — strong evidence close to named allele
+- `FAMILY_DETECTED` — gene family supported but alleles not distinguished
+- `PARTIAL_OR_DIVERGENT` — incomplete or divergent mapping
+- `MIXED_OR_MOSAIC` — discontinuous or threshold-sensitive evidence
+- `NOT_DETECTED` — insufficient evidence
+    ]]></token>
+</macros>
