@@ -1,0 +1,50 @@
+<tool id="krepp_sketch" name="krepp sketch" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>create a sketch from a single FASTA/Q file</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+krepp sketch
+-i '$input'
+-o '$sketch'
+--num-threads \${GALAXY_SLOTS:-4}
+]]></command>
+    <inputs>
+        <param argument="-i" name="input" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Input sequences" help="FASTA or FASTQ file containing reference sequences to sketch"/>
+    </inputs>
+    <outputs>
+        <data name="sketch" format="binary"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="input" value="ref1.fna" ftype="fasta"/>
+            <output name="sketch" ftype="binary">
+                <assert_contents>
+                    <has_size value="512"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Creates a krepp sketch from a single FASTA/Q file. The sketch is a compact
+binary representation of the k-mer content of the input sequences, which can
+be used for fast one-to-one distance estimation with `krepp seek`.
+
+**Input**
+
+A FASTA or FASTQ file containing reference sequences (e.g., a genome assembly
+or a metagenomic sample).
+
+**Output**
+
+A binary sketch file that can be used as input to `krepp seek`.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

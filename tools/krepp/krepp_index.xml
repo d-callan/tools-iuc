@@ -1,0 +1,110 @@
+<tool id="krepp_index" name="krepp index" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>build a reference index for k-mer based distance estimation</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p refs &&
+#for $ref in $ref_genomes:
+    ln -s '$ref' 'refs/${ref.element_identifier}' &&
+#end for
+#for $ref in $ref_genomes:
+    echo '${ref.element_identifier}\trefs/${ref.element_identifier}' >> input_map.tsv &&
+#end for
+
+krepp index
+-i input_map.tsv
+-o index_out
+-k $kmer_size
+-h $hamming_dist
+-w $window_size
+-m $num_partitions
+-r $partition
+#if $frac_mode:
+    --frac
+#else:
+    --no-frac
+#end if
+#if $nwk_tree:
+    -t '$nwk_tree'
+#end if
+--num-threads \${GALAXY_SLOTS:-4}
+&&
+tar -cf '$index_archive' -C index_out .
+]]></command>
+    <inputs>
+        <param name="ref_genomes" type="data" format="fasta" multiple="true" label="Reference genomes" help="FASTA files containing reference genome sequences. Dataset names will be used as reference IDs and must match tip labels in the backbone tree if provided."/>
+        <param argument="-t" name="nwk_tree" type="data" format="newick" optional="true" label="Backbone tree (optional)" help="Newick-format phylogenetic tree whose tip labels match reference dataset names"/>
+        <param argument="-k" name="kmer_size" type="integer" value="27" min="1" max="63" label="K-mer size" help="Size of k-mers to use for indexing"/>
+        <param argument="-h" name="hamming_dist" type="integer" value="11" min="0" max="63" label="Hamming distance threshold" help="Maximum Hamming distance for k-mer matching"/>
+        <param argument="-w" name="window_size" type="integer" value="35" min="1" label="Minimizer window size" help="Window size for minimizer selection"/>
+        <param argument="-m" name="num_partitions" type="integer" value="4" min="1" label="Number of partitions" help="Number of FracMinHash partitions"/>
+        <param argument="-r" name="partition" type="integer" value="1" min="1" label="Partition index" help="Which partition to build (1-indexed). Build all partitions sequentially for a complete index."/>
+        <param argument="--frac" name="frac_mode" type="boolean" truevalue="--frac" falsevalue="--no-frac" checked="true" label="Use FracMinHash mode" help="Enable or disable FracMinHash sketching. Enabled by default."/>
+    </inputs>
+    <outputs>
+        <data name="index_archive" format="tar"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="ref_genomes" value="refs/G001610775.fna,refs/G000735195.fna,refs/G000526415.fna" ftype="fasta"/>
+            <param name="nwk_tree" value="tree.nwk" ftype="newick"/>
+            <param name="kmer_size" value="27"/>
+            <param name="hamming_dist" value="11"/>
+            <param name="window_size" value="35"/>
+            <param name="num_partitions" value="4"/>
+            <param name="partition" value="1"/>
+            <param name="frac_mode" value="True"/>
+            <output name="index_archive" ftype="tar">
+                <assert_contents>
+                    <has_size value="10240"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Builds a krepp reference index from a set of reference genomes. The index uses
+LSH (Locality-Sensitive Hashing) with colored k-mers and FracMinHash sketching
+to enable fast distance estimation and phylogenetic placement of query sequences.
+
+**Inputs**
+
+- **Reference genomes**: One or more FASTA files containing reference genome
+  sequences. The dataset names are used as reference IDs in the output and must
+  match tip labels in the backbone tree if one is provided.
+- **Backbone tree** (optional): A Newick-format phylogenetic tree whose tip
+  labels match the reference dataset names. If provided, the tree is embedded
+  in the index for later phylogenetic placement.
+
+**Output**
+
+A tar archive containing the krepp index directory. This archive can be used
+directly as input to `krepp dist` and `krepp place`.
+
+**Parameters**
+
+- **K-mer size**: Length of k-mers extracted from reference genomes. Larger
+  values increase specificity but reduce sensitivity.
+- **Hamming distance threshold**: Maximum allowed Hamming distance between
+  k-mers for them to be considered matching.
+- **Minimizer window size**: Window size for minimizer selection; affects
+  sketch density.
+- **Number of partitions**: Number of FracMinHash partitions for the index.
+- **Partition index**: Which partition to build (1-indexed). Build all
+  partitions sequentially for a complete index.
+- **FracMinHash mode**: Enable/disable FracMinHash sketching.
+
+**Memory note**
+
+Memory usage increases linearly with the number of threads. Consider using
+fewer threads for large reference sets.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

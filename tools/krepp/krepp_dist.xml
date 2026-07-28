@@ -1,0 +1,94 @@
+<tool id="krepp_dist" name="krepp dist" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>estimate distances of query sequences to reference genomes</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="stdio"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+mkdir -p index_dir &&
+tar -xf '$index' -C index_dir &&
+
+krepp dist
+-i index_dir
+-q '$query'
+-o '$output'
+--num-threads \${GALAXY_SLOTS:-4}
+#if $output_mode == 'no_multi':
+    --no-multi
+#elif $output_mode == 'summarize':
+    --summarize
+#end if
+#if $filter:
+    --filter
+#end if
+#if str($dist_max):
+    --dist-max $dist_max
+#end if
+]]></command>
+    <inputs>
+        <param name="index" type="data" format="tar" label="Krepp index" help="Index archive produced by krepp index"/>
+        <param argument="-q" name="query" type="data" format="fasta,fastq,fasta.gz,fastq.gz" label="Query sequences" help="FASTA or FASTQ file containing query sequences"/>
+        <param name="output_mode" type="select" label="Output mode">
+            <option value="multi" selected="true">Multiple hits per read (default)</option>
+            <option value="no_multi">Single best hit per read (--no-multi)</option>
+            <option value="summarize">Summarize to weighted count table (--summarize)</option>
+        </param>
+        <param argument="--filter" type="boolean" truevalue="--filter" falsevalue="" checked="false" label="Statistical filtering" help="Retain only hits statistically indistinguishable from the closest hit"/>
+        <param argument="--dist-max" type="float" optional="true" label="Maximum distance cap" help="Cap the maximum distance reported"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="tabular"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="index" value="toy_index.tar" ftype="tar"/>
+            <param name="query" value="query_toy.fq" ftype="fastq"/>
+            <param name="output_mode" value="multi"/>
+            <assert_command>
+                <has_text text="krepp dist"/>
+                <has_text text="-i index_dir"/>
+                <has_text text="-q"/>
+            </assert_command>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="index" value="toy_index.tar" ftype="tar"/>
+            <param name="query" value="query_toy.fq" ftype="fastq"/>
+            <param name="output_mode" value="summarize"/>
+            <assert_command>
+                <has_text text="--summarize"/>
+            </assert_command>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Estimates distances of query sequences (e.g., reads) to reference genomes using
+a pre-built krepp index. Distances are akin to the number of mismatches one
+would obtain by alignment.
+
+**Output**
+
+By default, a tab-separated file with columns:
+
+- **SEQ_ID**: query sequence identifier
+- **REFERENCE_NAME**: reference genome identifier
+- **DIST**: estimated distance (mismatch rate)
+
+With **Summarize** mode, outputs a weighted count table:
+
+- **REFERENCE_NAME**: reference genome identifier
+- **WEIGHTED_COUNT**: shared read count
+- **SEQUENCE_ABUNDANCE**: normalized abundance
+
+**Options**
+
+- **Multiple hits**: Report all reference hits per read (default) or only the best.
+- **Filter**: Retain only hits statistically indistinguishable from the closest hit.
+- **Max distance**: Cap the maximum distance reported.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
