@@ -1,0 +1,15 @@
+categories:
+- Variant Analysis
+description: Utilities for working with variant string format, a compact text format for encoding multi-locus amino-acid genotypes
+homepage_url: https://github.com/mrc-ide/variantstring
+long_description: |
+  The variantstring R package provides utilities for working with variant string
+  format, a compact text format for encoding multi-locus amino-acid genotypes
+  (e.g., pfcrt:72_73:C|S_V|A). The package supports validation, conversion
+  between variant strings and long-form data frames, subsetting by genomic
+  position, comparing variant/position strings for matches, extracting component
+  genotypes, and overlaying variants.
+name: variantstring
+owner: iuc
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/variantstring
+type: unrestricted
