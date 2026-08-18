@@ -1,0 +1,120 @@
+<tool id="selscan_norm" name="selscan norm" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Normalize selscan scores and generate windowed summaries</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+selscan norm
+#if $norm_stat == 'ihs'
+  --ihs
+#elif $norm_stat == 'nsl'
+  --nsl
+#elif $norm_stat == 'xpehh'
+  --xpehh
+#elif $norm_stat == 'xpnsl'
+  --xpnsl
+#end if
+--files
+#for $f in $in_files
+  '$f'
+#end for
+--crit-val $crit_val
+#if $crit_percent
+  --crit-percent $crit_percent
+#end if
+--qbins $qbins
+#if $norm_stat == 'ihs' or $norm_stat == 'nsl'
+  --bins $bins
+#end if
+#if $window_analysis['do_windows'] == 'yes'
+  --bp-win
+  --winsize $window_analysis.winsize
+  --min-snps $window_analysis.min_snps
+#end if
+--log norm.log
+&&
+#set $norm_suffix = '.norm'
+#if $norm_stat == 'ihs' or $norm_stat == 'nsl'
+  #set $norm_suffix = '.' + str($bins) + 'bins.norm'
+#end if
+#for $f in $in_files
+  #set $base = $f.element_identifier.rsplit('.', 1)[0]
+  mv '${base}${norm_suffix}' '${base}.normed' &&
+#end for
+#set $first_base = $in_files[0].element_identifier.rsplit('.', 1)[0]
+#if $window_analysis['do_windows'] == 'yes'
+  mv '${first_base}.normed.${str($window_analysis.winsize / 1000)}kb.windows' '$windows_file' &&
+#end if
+mv '${first_base}.normed' '$norm_file'
+    ]]></command>
+    <inputs>
+        <param name="norm_stat" type="select" label="Statistic to normalize">
+            <option value="ihs">iHS</option>
+            <option value="nsl">nSL</option>
+            <option value="xpehh">XP-EHH</option>
+            <option value="xpnsl">XP-nSL</option>
+        </param>
+        <param name="in_files" type="data" format="tabular" multiple="true" label="selscan score files (.out)" help="The tab-delimited score files produced by the selscan tool for the selected statistic."/>
+        <param name="crit_val" type="float" value="2.0" min="0" label="Critical value" help="The absolute normalized score threshold used to flag extreme (candidate) SNPs. A SNP is flagged if its normalized score is above this value or below its negative."/>
+        <param name="crit_percent" type="float" optional="true" min="0" max="1" label="Critical percentile" help="If set, the critical value is instead computed as the (1 - p/2) and (p/2) quantiles of the sorted normalized scores. Overrides the critical value."/>
+        <param name="qbins" type="integer" value="10" min="1" label="Quantile bins" help="Outlying windows are binned by the number of sites within each window. This is the number of quantile bins to use."/>
+        <param name="bins" type="integer" value="100" min="1" label="Frequency bins" help="The number of frequency bins in [0,1] for score normalization. Only used for iHS and nSL."/>
+        <conditional name="window_analysis">
+            <param name="do_windows" type="select" label="Generate windowed summary" help="Analyze non-overlapping windows of fixed bp for extreme scores, producing a .windows file.">
+                <option value="no" selected="true">No</option>
+                <option value="yes">Yes</option>
+            </param>
+            <when value="yes">
+                <param name="winsize" type="integer" value="100000" min="1" label="Window size (bp)" help="The non-overlapping window size for calculating the percentage of extreme SNPs."/>
+                <param name="min_snps" type="integer" value="10" min="0" label="Minimum SNPs per window" help="Only consider a bp window if it has at least this many SNPs."/>
+            </when>
+            <when value="no"/>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="norm_file" format="tabular" label="${tool.name} normalized ${norm_stat} scores on ${on_string}"/>
+        <data name="windows_file" format="tabular" label="${tool.name} ${norm_stat} windows on ${on_string}">
+            <filter>window_analysis['do_windows'] == 'yes'</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="norm_stat" value="ihs"/>
+            <param name="in_files" value="selscan.ihs.out" ftype="tabular"/>
+            <output name="norm_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="norm_ihs"/>
+                    <has_text text="crit"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+The `selscan norm` subcommand standardizes the unstandardized iHS, nSL, XP-EHH and XP-nSL scores produced by the **selscan** tool, and can optionally generate windowed summaries of extreme scores.
+
+**Normalization**
+
+- **iHS / nSL** — scores are binned by derived allele frequency into `bins` frequency bins in [0,1]. Within each bin the mean and variance are computed, and each score is standardized as `(x - mean) / sqrt(variance)`. Only bins containing at least 20 SNPs are reported.
+- **XP-EHH / XP-nSL** — scores are standardized using a single bin (the whole genome).
+
+A SNP is flagged as a candidate (the `crit` column is set to 1) if its normalized score is at or above the critical value, or at or below its negative. If a critical percentile is given, the critical value is instead computed from the quantiles of the sorted scores.
+
+**Windowed summary**
+
+When window analysis is enabled, the normalized scores are summarized in non-overlapping windows of the given size. For each window the fraction of extreme SNPs and a percentile score are reported. Windows with fewer than the minimum number of SNPs are reported with a percentile of -1 and a score of NA.
+
+**Input**
+
+One or more tab-delimited score files produced by the **selscan** tool for the selected statistic. The files must contain the header line and chromosome column produced by selscan v3.0.0+.
+
+**Attribution**
+
+This Galaxy tool wraps the selscan program (https://github.com/szpiech/selscan), developed by Zachary A. Szpiech.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

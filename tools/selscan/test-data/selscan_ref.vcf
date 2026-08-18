@@ -1,0 +1,23 @@
+##fileformat=VCFv4.2
+##contig=<ID=1>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	r1	r2	r3	r4	r5	r6
+1	100	rs1	A	G	.	PASS	.	GT	1|0	0|1	0|0	1|1	0|0	1|0
+1	200	rs2	C	T	.	PASS	.	GT	0|0	1|1	0|1	0|0	1|1	0|1
+1	300	rs3	G	A	.	PASS	.	GT	1|1	0|0	1|0	0|1	0|0	1|1
+1	400	rs4	T	C	.	PASS	.	GT	0|1	1|0	0|0	1|1	0|1	0|0
+1	500	rs5	A	G	.	PASS	.	GT	1|0	0|0	1|1	0|0	1|0	1|1
+1	600	rs6	C	T	.	PASS	.	GT	0|0	1|1	0|1	1|0	0|0	0|1
+1	700	rs7	G	C	.	PASS	.	GT	1|1	0|1	0|0	0|0	1|1	1|0
+1	800	rs8	T	A	.	PASS	.	GT	0|1	0|0	1|0	1|1	0|0	0|1
+1	900	rs9	A	C	.	PASS	.	GT	1|0	1|1	0|1	0|0	1|0	1|1
+1	1000	rs10	C	G	.	PASS	.	GT	0|0	0|1	1|1	1|0	0|1	0|0
+1	1100	rs11	G	T	.	PASS	.	GT	1|1	1|0	0|0	0|1	1|1	1|0
+1	1200	rs12	T	G	.	PASS	.	GT	0|1	0|0	1|0	1|1	0|0	0|1
+1	1300	rs13	C	A	.	PASS	.	GT	1|0	1|1	0|1	0|0	1|0	1|1
+1	1400	rs14	A	T	.	PASS	.	GT	0|0	0|1	1|1	1|0	0|1	0|0
+1	1500	rs15	G	C	.	PASS	.	GT	1|1	1|0	0|0	0|1	1|1	1|0
+1	1600	rs16	T	A	.	PASS	.	GT	0|1	0|0	1|0	1|1	0|0	0|1
+1	1700	rs17	C	G	.	PASS	.	GT	1|0	1|1	0|1	0|0	1|0	1|1
+1	1800	rs18	A	C	.	PASS	.	GT	0|0	0|1	1|1	1|0	0|1	0|0
+1	1900	rs19	G	A	.	PASS	.	GT	1|1	1|0	0|0	0|1	1|1	1|0
+1	2000	rs20	T	C	.	PASS	.	GT	0|1	0|0	1|0	1|1	0|0	0|1
