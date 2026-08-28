@@ -8,6 +8,6 @@ long_description: |
   can also be applied to phased diploids. It takes a tab-delimited genotype matrix and
   reports per-pair IBD segments and summary statistics.
 name: hmmibd
-owner: d-callan
+owner: iuc
 remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/hmmibd
 type: unrestricted
