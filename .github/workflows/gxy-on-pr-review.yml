@@ -58,6 +58,7 @@ jobs:
         id: review
         env:
           GXY_TOOL_BOT_API_KEY: ${{ secrets.GXY_TOOL_BOT_API_KEY }}
+          GXY_TOOL_BOT_API_KEY_CZ: ${{ secrets.GXY_TOOL_BOT_API_KEY_CZ }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gxy-tool-bot review \
