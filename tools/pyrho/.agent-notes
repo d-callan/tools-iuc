@@ -1,0 +1,5 @@
+# Agent Notes
+
+## Feedback round 1
+
+Feedback round: Fixed .shed.yml which used the invalid Tool Shed category "Population Genetics". Replaced with valid categories "Sequence Analysis" and "Variant Analysis" (verified against the Tool Shed categories API). All four tool XMLs pass planemo lint; no other changes were needed.

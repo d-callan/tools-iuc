@@ -3,7 +3,8 @@ name: pyrho
 owner: d-callan
 description: Demography-aware inference of fine-scale recombination rates using fused-LASSO
 categories:
-- Population Genetics
+- Sequence Analysis
+- Variant Analysis
 homepage_url: https://github.com/popgenmethods/pyrho
 long_description: |
   pyrho infers fine-scale, per-generation recombination maps from population
