@@ -6,7 +6,7 @@ api:
     - agentic
     - mini
   max_tool_iterations: 30
-  iterations_per_extra_tool_xml: 1
+  validation_retries_per_extra_tool_xml: 1
   temperature_plan: 0.4
   temperature_generate: 0.2
   max_context_chars: 100000
@@ -20,3 +20,7 @@ exemplars:
     shed_yml: https://raw.githubusercontent.com/galaxyproject/tools-iuc/main/tools/seqtk/.shed.yml
 
 repo: d-callan/tools-iuc
+
+agent_notes: true
+integrated_review_mode: on-validation-pass
+max_review_fix_rounds: 1
