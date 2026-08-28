@@ -18,12 +18,6 @@ pyrho make_table
 #end if
 -T $theta
 @THREADS@
-#if $store_stationary:
-    -S
-#end if
-#if $load_stationary:
-    -L
-#end if
 #if str($decimate_rel_tol):
     --decimate_rel_tol $decimate_rel_tol
 #end if
@@ -43,8 +37,6 @@ pyrho make_table
         <param name="approx" type="boolean" checked="true" truevalue="--approx" falsevalue="" label="Use approximate lookup table" help="Use the approximate (Moran model) lookup table. Recommended for sample sizes greater than about 20."/>
         <param name="moran_pop_size" type="integer" optional="true" label="Moran population size (N)" help="Population size for the approximate Moran model. Only used with --approx. Should be about 25-50% larger than the sample size."/>
         <param name="theta" type="float" value="0.0005" min="0.0" label="Theta" help="The population-scaled mutation rate used to build the table."/>
-        <param name="store_stationary" type="boolean" truevalue="-S" falsevalue="" label="Store stationary distribution" help="Store the stationary distribution in the lookup table."/>
-        <param name="load_stationary" type="boolean" truevalue="-L" falsevalue="" label="Load stationary distribution" help="Load a previously stored stationary distribution."/>
         <param name="decimate_rel_tol" type="float" value="0.0" min="0.0" label="Decimation relative tolerance" help="Relative tolerance when decimating the size history. Larger values smooth out small changes in population sizes and speed up computation."/>
         <param name="decimate_anc_size" type="float" optional="true" label="Most ancestral size when decimating" help="Most ancestral population size to use when decimating the size history."/>
         <param name="high_accuracy_stationary" type="boolean" truevalue="--high_accuracy_stationary" falsevalue="" label="High accuracy stationary distribution" help="Use a high-accuracy stationary distribution (slower but more accurate)."/>
@@ -65,7 +57,7 @@ pyrho make_table
             <param name="moran_pop_size" value="12"/>
             <output name="outfile" ftype="h5">
                 <assert_contents>
-                    <has_size value="1000"/>
+                    <has_size value="85168" delta="1000"/>
                 </assert_contents>
             </output>
         </test>

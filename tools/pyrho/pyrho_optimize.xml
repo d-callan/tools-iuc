@@ -71,7 +71,7 @@ pyrho optimize
             <param name="ploidy" value="2"/>
             <output name="outfile" ftype="tabular">
                 <assert_contents>
-                    <has_n_lines n="1" delta="0"/>
+                    <has_n_lines n="2" delta="0"/>
                 </assert_contents>
             </output>
         </test>

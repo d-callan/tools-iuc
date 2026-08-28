@@ -10,9 +10,7 @@ pyrho compute_r2
 --tablefile '$tablefile'
 --samplesize $samplesize
 --MAFcut $MAFcut
-#if str($quantiles):
-    --quantiles '$quantiles'
-#end if
+--quantiles '$quantiles'
 #if $compute_mean:
     --compute_mean
 #end if
@@ -23,7 +21,7 @@ pyrho compute_r2
         <param name="tablefile" type="data" format="h5" label="pyrho lookup table" help="The demography-specific lookup table produced by pyrho make_table."/>
         <param name="samplesize" type="integer" min="2" label="Sample size (number of haplotypes)" help="The number of haplotypes to compute the r^2 distribution for. Must be no larger than the lookup table sample size."/>
         <param name="MAFcut" type="float" value="0.0" min="0.0" label="Minor allele frequency cutoff" help="Only pairs of sites where both sites have a minor allele frequency above this threshold are considered. Must be less than 0.5."/>
-        <param name="quantiles" type="text" optional="true" label="Quantiles to compute" help="Comma-delimited list of quantiles (e.g. 0.25,0.5,0.75)."/>
+        <param name="quantiles" type="text" value="0.5" label="Quantiles to compute" help="Comma-delimited list of quantiles (e.g. 0.25,0.5,0.75)."/>
         <param name="compute_mean" type="boolean" truevalue="--compute_mean" falsevalue="" label="Compute the mean of r^2" help="Also compute the mean of the r^2 distribution."/>
     </inputs>
     <outputs>
@@ -32,12 +30,14 @@ pyrho compute_r2
     <tests>
         <test expect_num_outputs="1">
             <param name="tablefile" value="lookup_table.h5" ftype="h5"/>
-            <param name="samplesize" value="10"/>
+            <param name="samplesize" value="4"/>
             <param name="compute_mean" value="true"/>
             <output name="outfile" ftype="tabular">
                 <assert_contents>
                     <has_text text="r"/>
                     <has_text text="mean"/>
+                    <has_text text="0.5"/>
+                    <has_n_lines n="191" delta="0"/>
                 </assert_contents>
             </output>
         </test>
