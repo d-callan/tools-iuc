@@ -1,0 +1,107 @@
+<tool id="hmmibd" name="hmmIBD" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>detect genomic regions identical by descent between haploid samples</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+#set $output_basename = 'hmmibd_out'
+hmmIBD
+  -i '$input_file'
+  -o '$output_basename'
+#if $input_file2
+  -I '$input_file2'
+#end if
+#if $allele_freq_file
+  -f '$allele_freq_file'
+#end if
+#if $allele_freq_file2
+  -F '$allele_freq_file2'
+#end if
+#if $samples_to_skip
+  -b '$samples_to_skip'
+#end if
+#if $sample_pairs
+  -g '$sample_pairs'
+#end if
+  -m $max_fit_iterations
+#if $max_generations
+  -n $max_generations
+#end if
+#if $fixed_ibd_prior
+  -r $fixed_ibd_prior
+#end if
+&& mv '${output_basename}.hmm.txt' '$hmm_segments'
+&& mv '${output_basename}.hmm_fract.txt' '$hmm_fract'
+    ]]></command>
+    <inputs>
+        <param name="input_file" type="data" format="tabular" label="Genotype matrix (population 1)" help="Tab-delimited genotype matrix with a header row of sample names. Columns: chromosome, position, then one column per sample. Genotypes are coded -1 (missing), 0 (first allele), 1 (second allele), etc. Variants must be in chromosome/position order."/>
+        <param name="input_file2" type="data" format="tabular" optional="true" label="Genotype matrix (population 2)" help="Optional second population genotype file, same format as the first. When supplied, all pairwise comparisons are made between samples from different populations."/>
+        <param name="allele_freq_file" type="data" format="tabular" optional="true" label="Allele frequency file (population 1)" help="Tab-delimited, no header, one variant per row: chromosome (int), position (int), allele 1 frequency, allele 2 frequency, ... Must contain exactly the same variants, in the same order, as the genotype file. If not supplied, allele frequencies are computed from the input."/>
+        <param name="allele_freq_file2" type="data" format="tabular" optional="true" label="Allele frequency file (population 2)" help="Allele frequency file for the second population, same format as the population 1 frequency file."/>
+        <param name="samples_to_skip" type="data" format="txt" optional="true" label="Samples to exclude" help="File of sample ids to exclude from all analysis. No header, one id per line."/>
+        <param name="sample_pairs" type="data" format="tabular" optional="true" label="Sample pairs to analyze" help="File of sample pairs to analyze; all others are not processed by the HMM (but are still used to calculate allele frequencies). No header, tab-delimited, two sample ids per row."/>
+        <param name="max_fit_iterations" type="integer" value="5" min="1" label="Maximum number of fit iterations" help="Maximum number of EM fit iterations (-m)."/>
+        <param name="max_generations" type="float" optional="true" label="Cap on the number of generations" help="Sets the maximum value for the number of generations parameter in the fit (-n). Useful for recent-IBD analyses."/>
+        <param name="fixed_ibd_prior" type="float" optional="true" min="0" max="1" label="Fixed IBD fraction prior" help="Supplies a fixed value of the IBD fraction used to determine IBD segments (-r). Useful when detecting or characterizing selective sweeps."/>
+    </inputs>
+    <outputs>
+        <data name="hmm_segments" format="tabular" label="${tool.name} segments on ${on_string}"/>
+        <data name="hmm_fract" format="tabular" label="${tool.name} summary on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="2">
+            <param name="input_file" value="genotypes.txt" ftype="tabular"/>
+            <param name="allele_freq_file" value="freqs.txt" ftype="tabular"/>
+            <output name="hmm_segments" ftype="tabular">
+                <assert_contents>
+                    <has_text text="sample1"/>
+                    <has_text text="S1"/>
+                    <has_text text="S2"/>
+                </assert_contents>
+            </output>
+            <output name="hmm_fract" ftype="tabular">
+                <assert_contents>
+                    <has_text text="fract_sites_IBD"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="input_file" value="genotypes.txt" ftype="tabular"/>
+            <param name="input_file2" value="genotypes2.txt" ftype="tabular"/>
+            <param name="allele_freq_file" value="freqs.txt" ftype="tabular"/>
+            <param name="allele_freq_file2" value="freqs2.txt" ftype="tabular"/>
+            <param name="max_fit_iterations" value="3"/>
+            <output name="hmm_fract" ftype="tabular">
+                <assert_contents>
+                    <has_text text="fract_sites_IBD"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-I"/>
+                <has_text text="-f"/>
+                <has_text text="-F"/>
+                <has_text text="-m 3"/>
+            </assert_command>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+hmmIBD implements a hidden Markov model (HMM) for detecting genomic regions that are identical by descent (IBD) between pairs of haploid samples (e.g. *P. falciparum*), and can also be applied to phased diploids. Each variant site is assigned to one of two hidden states (IBD / not-IBD). Allele frequencies are estimated from the input by default, or can be supplied as a file. The model fits two free parameters — the fraction of the genome that is IBD and the number of generations of recombination — by iterative expectation-maximization.
+
+**Input format**
+
+Tab-delimited genotype matrix with a header row of sample names. Columns: chromosome, position, then one column per sample. Genotypes are coded -1 (missing), 0 (first allele), 1 (second allele), etc. Variants must be in chromosome/position order and may have 2–8 alleles. A second population file (and its allele frequencies) may be supplied to compare samples across populations.
+
+**Outputs**
+
+Two tabular outputs are produced:
+
+- *Segments* (`.hmm.txt`): per-pair contiguous segments with the assigned state (0 = IBD, 1 = not-IBD) and the number of variants covered by each segment.
+- *Summary* (`.hmm_fract.txt`): per-pair statistics. The last column, `fract_sites_IBD`, is the fraction of the genome IBD between the pair (the marginal posterior probability of the IBD state from the forward-backward algorithm). Other columns include `N_informative_sites`, `discordance`, `log_p`, `N_fit_iteration`, `N_generation`, `N_state_transition`, `seq_shared_best_traj`, and `fract_vit_sites_IBD`.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
