@@ -1,0 +1,24 @@
+---
+name: pyrho
+owner: d-callan
+description: Demography-aware inference of fine-scale recombination rates using fused-LASSO
+categories:
+- Population Genetics
+homepage_url: https://github.com/popgenmethods/pyrho
+long_description: |
+  pyrho infers fine-scale, per-generation recombination maps from population
+  genetic data using composite likelihoods and fused-LASSO penalized
+  optimization. It is demography-aware: a lookup table is first built for the
+  specific demographic history (make_table), then the recombination map is
+  inferred by penalized maximum composite likelihood (optimize). The suite
+  also provides simulation-based hyperparameter tuning (hyperparam) and
+  computation of the theoretical r^2 distribution (compute_r2).
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/pyrho
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for pyrho application {{ tool_name }}."
+suite:
+  name: "suite_pyrho"
+  description: "A suite of Galaxy tools for demography-aware fine-scale recombination rate inference with pyrho."
+  type: repository_suite_definition

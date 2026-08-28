@@ -1,0 +1,61 @@
+<macros>
+    <token name="@TOOL_VERSION@">0.2.1</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">pyrho</requirement>
+            <requirement type="package" version="0.2.1">ldpop</requirement>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>python -c "import pyrho; print(pyrho.VERSION)"</version_command>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1126/sciadv.aaw9206</citation>
+            <citation type="doi">10.1534/genetics.116.189944</citation>
+        </citations>
+    </xml>
+    <token name="@THREADS@">--numthreads \${GALAXY_SLOTS:-4}</token>
+    <!-- Shared demography input (used by make_table and hyperparam) -->
+    <xml name="macro_demography">
+        <conditional name="demography_source">
+            <param name="demography_source_selector" type="select" label="Demographic history source">
+                <option value="popsizes">Population sizes (and optional epoch times)</option>
+                <option value="msmc">MSMC output file</option>
+                <option value="smcpp">smc++ CSV file</option>
+            </param>
+            <when value="popsizes">
+                <param name="popsizes" type="text" label="Population sizes" help="Comma-delimited list of epoch population sizes. The number of population sizes must equal the number of epoch times plus one.">
+                    <validator type="regex" message="Comma-delimited list of numbers">^[0-9.,eE+-]+$</validator>
+                </param>
+                <param name="epochtimes" type="text" optional="true" label="Epoch times (generations)" help="Comma-delimited list of epoch breakpoints in generations. Optional."/>
+            </when>
+            <when value="msmc">
+                <param name="msmc_file" type="data" format="tabular" label="MSMC output file"/>
+            </when>
+            <when value="smcpp">
+                <param name="smcpp_file" type="data" format="tabular" label="smc++ CSV file"/>
+            </when>
+        </conditional>
+    </xml>
+    <!-- Cheetah logic for the demography command fragment -->
+    <token name="@DEMOGRAPHY@"><![CDATA[
+#if $demography_source.demography_source_selector == 'popsizes':
+    -p '${demography_source.popsizes}'
+    #if str($demography_source.epochtimes):
+        -t '${demography_source.epochtimes}'
+    #end if
+#elif $demography_source.demography_source_selector == 'msmc':
+    --msmc_file '${demography_source.msmc_file}'
+#else
+    --smcpp_file '${demography_source.smcpp_file}'
+#end if
+]]></token>
+    <!-- Shared metawindow/overlap params (used by optimize and hyperparam) -->
+    <xml name="macro_common_optimize">
+        <param name="metawindow" type="integer" value="4001" label="Metawindow size" help="Minimum number of SNPs to include in each independent, parallelizable chunk."/>
+        <param name="overlap" type="integer" value="100" label="Overlap" help="Amount to trim off each side of a metawindow."/>
+    </xml>
+</macros>
