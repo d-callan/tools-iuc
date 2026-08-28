@@ -7,6 +7,9 @@
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
+#for $f in $in_files
+  ln -s '$f' '${f.element_identifier}' &&
+#end for
 selscan norm
 #if $norm_stat == 'ihs'
   --ihs
@@ -19,7 +22,7 @@ selscan norm
 #end if
 --files
 #for $f in $in_files
-  '$f'
+  '${f.element_identifier}'
 #end for
 --crit-val $crit_val
 #if $crit_percent
@@ -41,14 +44,13 @@ selscan norm
   #set $norm_suffix = '.' + str($bins) + 'bins.norm'
 #end if
 #for $f in $in_files
-  #set $base = $f.element_identifier.rsplit('.', 1)[0]
-  mv '${base}${norm_suffix}' '${base}.normed' &&
+  mv '${f.element_identifier}${norm_suffix}' '${f.element_identifier}.normed' &&
 #end for
-#set $first_base = $in_files[0].element_identifier.rsplit('.', 1)[0]
+#set $first = $in_files[0].element_identifier
 #if $window_analysis['do_windows'] == 'yes'
-  mv '${first_base}.normed.${str($window_analysis.winsize / 1000)}kb.windows' '$windows_file' &&
+  mv '${first}${norm_suffix}.${str(int($window_analysis.winsize) // 1000)}kb.windows' '$windows_file' &&
 #end if
-mv '${first_base}.normed' '$norm_file'
+mv '${first}.normed' '$norm_file'
     ]]></command>
     <inputs>
         <param name="norm_stat" type="select" label="Statistic to normalize">

@@ -2,7 +2,7 @@ name: selscan
 owner: d-callan
 description: EHH-based haplotype scans for positive selection (EHH, iHS, XP-EHH, nSL, XP-nSL, iHH12, pi) and score normalization
 categories:
-- Population Genetics
+- Sequence Analysis
 - Variant Analysis
 homepage_url: https://github.com/szpiech/selscan
 long_description: |
