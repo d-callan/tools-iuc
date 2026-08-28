@@ -1,0 +1,13 @@
+categories:
+- Variant Analysis
+description: Detect genomic regions identical by descent between haploid samples using a hidden Markov model
+homepage_url: https://github.com/glipsnort/hmmIBD
+long_description: |
+  hmmIBD implements a hidden Markov model (HMM) for detecting genomic regions that are
+  identical by descent (IBD) between pairs of haploid samples (e.g. P. falciparum), and
+  can also be applied to phased diploids. It takes a tab-delimited genotype matrix and
+  reports per-pair IBD segments and summary statistics.
+name: hmmibd
+owner: d-callan
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/hmmibd
+type: unrestricted

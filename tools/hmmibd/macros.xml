@@ -1,0 +1,23 @@
+<macros>
+    <token name="@TOOL_VERSION@">2.1.3</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">hmmibd</xref>
+        </xrefs>
+    </xml>
+    <xml name="requirements">
+        <requirements>
+            <requirement type="package" version="@TOOL_VERSION@">hmmibd</requirement>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command>hmmIBD 2&gt;&amp;1 | head -1</version_command>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1186/s12936-018-2349-7</citation>
+        </citations>
+    </xml>
+</macros>
