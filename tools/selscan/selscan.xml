@@ -11,34 +11,40 @@
 #if $statistic == 'ehh'
   #set $outname = 'selscan.ehh.' + str($locus_id) + '.out'
 #elif $statistic == 'pi'
-  #set $outname = 'selscan.pi.' + str($pi_win) + '.out'
+  #set $outname = 'selscan.pi.' + str($pi_win) + 'bp.out'
 #end if
 #if $alt
-  #set $outname = $outname.replace('.out', '.alt.out')
+  #set $outname = $outname + '.alt'
 #end if
-
+ln -s '$in_file' '${in_file.element_identifier}' &&
+#if $ref_file
+  ln -s '$ref_file' '${ref_file.element_identifier}' &&
+#end if
+#if $map_file
+  ln -s '$map_file' '${map_file.element_identifier}' &&
+#end if
 selscan
 #if $statistic == 'ihs'
   --ihs
-#elif $statistic == 'xpehh'
-  --xpehh
 #elif $statistic == 'nsl'
   --nsl
+#elif $statistic == 'xpehh'
+  --xpehh
 #elif $statistic == 'xpnsl'
   --xpnsl
 #elif $statistic == 'ihh12'
   --ihh12
 #elif $statistic == 'ehh'
-  --ehh '$locus_id'
+  --ehh $locus_id
 #elif $statistic == 'pi'
   --pi --pi-win $pi_win
 #end if
---vcf '$in_file'
-#if ($statistic == 'xpehh' or $statistic == 'xpnsl') and $ref_file
-  --vcf-ref '$ref_file'
+--vcf '${in_file.element_identifier}'
+#if $ref_file
+  --vcf-ref '${ref_file.element_identifier}'
 #end if
 #if $map_file
-  --map '$map_file'
+  --map '${map_file.element_identifier}'
 #end if
 --maf $maf
 --cutoff $cutoff
@@ -47,50 +53,64 @@ selscan
 --ehh-win $ehh_win
 --gap-scale $gap_scale
 --max-gap $max_gap
-$keep_low_freq
-$trunc_ok
-$pmap
-$unphased
-$wagh
-$alt
-$ihs_detail
+#if $keep_low_freq
+  --keep-low-freq
+#end if
+#if $trunc_ok
+  --trunc-ok
+#end if
+#if $pmap
+  --pmap
+#end if
+#if $unphased
+  --unphased
+#end if
+#if $wagh
+  --wagh
+#end if
+#if $alt
+  --alt
+#end if
+#if $ihs_detail
+  --ihs-detail
+#end if
 --threads \${GALAXY_SLOTS:-4}
 --out selscan
 &&
 mv '$outname' '$out_file'
     ]]></command>
     <inputs>
-        <param name="statistic" type="select" label="Statistic to calculate">
-            <option value="ihs">iHS (integrated haplotype score)</option>
-            <option value="nsl">nSL (number of segregating sites by length)</option>
-            <option value="xpehh">XP-EHH (cross-population EHH)</option>
-            <option value="xpnsl">XP-nSL (cross-population nSL)</option>
+        <param name="statistic" type="select" label="Statistic to compute">
+            <option value="ihs">iHS</option>
+            <option value="nsl">nSL</option>
+            <option value="xpehh">XP-EHH</option>
+            <option value="xpnsl">XP-nSL</option>
             <option value="ihh12">iHH12</option>
-            <option value="ehh">EHH at a single locus</option>
-            <option value="pi">pi (pairwise nucleotide diversity, sliding window)</option>
+            <option value="ehh">EHH</option>
+            <option value="pi">pi</option>
         </param>
-        <param name="in_file" type="data" format="vcf,vcf_bgzip" label="Phased haplotype data (VCF)" help="Haplotype data coded 0/1. No missing genotypes are allowed. For iHS, XP-EHH, EHH and iHH12 a genetic map is required."/>
-        <param name="ref_file" type="data" format="vcf,vcf_bgzip" optional="true" label="Reference population VCF (XP-EHH / XP-nSL)" help="Reference population haplotype data for cross-population statistics. Must contain the same loci as the query file."/>
-        <param name="map_file" type="data" format="tabular" optional="true" label="Genetic map file" help="Tab-delimited file with one row per variant: &lt;chr#&gt; &lt;locusID&gt; &lt;genetic position&gt; &lt;physical position&gt;. Required for iHS, XP-EHH, EHH and iHH12 when using VCF input."/>
-        <param name="locus_id" type="text" optional="true" label="Locus ID for EHH calculation" help="The locus ID (from the map file) at which to calculate EHH. Only used when the EHH statistic is selected."/>
-        <param name="maf" type="float" value="0.05" min="0" max="1" label="Minimum minor allele frequency (MAF)" help="Minimum MAF for a variant to be used as a core SNP."/>
-        <param name="cutoff" type="float" value="0.05" min="0" max="1" label="EHH decay cutoff" help="EHH decay cutoff value."/>
-        <param name="max_extend" type="integer" value="1000000" label="Maximum EHH extension (bp)" help="Maximum distance in bp to extend the EHH decay calculation from the core. A value &lt;= 0 means no restriction."/>
-        <param name="max_extend_nsl" type="integer" value="100" label="Maximum nSL extension (SNPs)" help="Maximum number of SNPs to extend the nSL haplotype. A value &lt;= 0 means no restriction."/>
-        <param name="ehh_win" type="integer" value="100000" label="EHH window (bp)" help="EHH window size in bp in each direction."/>
-        <param name="gap_scale" type="integer" value="20000" label="Gap scaling (bp)" help="Gap scaling in bp. If a gap is larger than this value but smaller than the maximum gap, genetic distance is scaled by GAP_SCALE/GAP."/>
-        <param name="max_gap" type="integer" value="200000" label="Maximum gap (bp)" help="Maximum gap in bp between SNPs."/>
-        <param name="pi_win" type="integer" value="100" label="pi window (bp)" help="Sliding window size in bp for the pi statistic."/>
-        <param name="keep_low_freq" type="boolean" truevalue="--keep-low-freq" falsevalue="" checked="false" label="Keep low-frequency variants" help="Include low-frequency variants in haplotypes (by default low-frequency variants are skipped)."/>
-        <param name="trunc_ok" type="boolean" truevalue="--trunc-ok" falsevalue="" checked="false" label="Allow truncated EHH curves" help="Integrate the EHH curve even if decay reaches the sequence end before the cutoff (iHS/XP-EHH only)."/>
-        <param name="pmap" type="boolean" truevalue="--pmap" falsevalue="" checked="false" label="Use physical map" help="Use the physical map instead of the genetic map."/>
-        <param name="unphased" type="boolean" truevalue="--unphased" falsevalue="" checked="false" label="Use unphased multilocus genotypes" help="Use unphased multilocus genotypes instead of phased haplotypes. Not compatible with iHH12 or pi."/>
-        <param name="wagh" type="boolean" truevalue="--wagh" falsevalue="" checked="false" label="Use Wagh EHH denominator (XP-EHH)" help="Use the Wagh EHH denominator for XP-EHH, which separates the core SNP alleles. XP-EHH only; do not use with the alt option."/>
-        <param name="alt" type="boolean" truevalue="--alt" falsevalue="" checked="false" label="Use sum of squared haplotype frequencies" help="Calculate homozygosity using the sum of squared haplotype frequencies instead of binomial coefficients."/>
-        <param name="ihs_detail" type="boolean" truevalue="--ihs-detail" falsevalue="" checked="false" label="Write iHS detail columns" help="Write left/right iHH for the derived and ancestral alleles in addition to iHS."/>
+        <param name="in_file" type="data" format="vcf,vcf_bgzip" label="Phased VCF" help="Phased haplotype data coded 0/1. No missing genotypes are allowed."/>
+        <param name="ref_file" type="data" format="vcf,vcf_bgzip" optional="true" label="Reference population VCF" help="Required for XP-EHH and XP-nSL. Must contain the same loci as the query file."/>
+        <param name="map_file" type="data" format="tabular" optional="true" label="Genetic map" help="Tab-delimited file with one row per variant: &lt;chr#&gt; &lt;locusID&gt; &lt;genetic position&gt; &lt;physical position&gt;. Required for iHS, XP-EHH, EHH, iHH12 and pi."/>
+        <param name="maf" type="float" value="0.05" min="0" max="0.5" label="Minor allele frequency cutoff" help="Sites with minor allele frequency below this value are excluded."/>
+        <param name="cutoff" type="float" value="0.05" min="0" max="0.5" label="EHH decay cutoff" help="The EHH decay cutoff used when integrating EHH to compute iHH."/>
+        <param name="max_extend" type="integer" value="1000000" min="1" label="Maximum extension distance (bp)" help="The maximum distance in base pairs to extend EHH decay."/>
+        <param name="max_extend_nsl" type="integer" value="100" min="1" label="Maximum extension distance (SNPs)" help="The maximum number of segregating sites to extend nSL decay."/>
+        <param name="ehh_win" type="integer" value="100000" min="1" label="EHH window size (bp)" help="The window size in base pairs used for EHH calculations."/>
+        <param name="gap_scale" type="integer" value="20000" min="1" label="Gap scale" help="The gap scale used to handle missing data between markers."/>
+        <param name="max_gap" type="integer" value="200000" min="1" label="Maximum gap (bp)" help="The maximum gap in base pairs allowed between markers."/>
+        <param name="keep_low_freq" type="boolean" checked="false" label="Keep low frequency sites" help="Do not remove sites below the minor allele frequency cutoff."/>
+        <param name="trunc_ok" type="boolean" checked="false" label="Allow truncated EHH" help="Allow EHH decay to be truncated at the end of the chromosome."/>
+        <param name="pmap" type="boolean" checked="false" label="Use physical map" help="Use physical positions instead of genetic positions."/>
+        <param name="unphased" type="boolean" checked="false" label="Unphased data" help="Treat the input as unphased data."/>
+        <param name="wagh" type="boolean" checked="false" label="Weighted average haplotype homozygosity" help="Use weighted average haplotype homozygosity."/>
+        <param name="alt" type="boolean" checked="false" label="Compute alternate allele scores" help="Also compute scores for the alternate allele."/>
+        <param name="ihs_detail" type="boolean" checked="false" label="Detailed iHS output" help="Output additional detail for iHS."/>
+        <param name="locus_id" type="text" label="Locus ID for EHH" help="The locus ID (variant ID) at which to compute EHH. Only used when the EHH statistic is selected."/>
+        <param name="pi_win" type="integer" value="100" min="1" label="pi window size (bp)" help="The sliding window size in base pairs for the pi statistic. Only used when the pi statistic is selected."/>
     </inputs>
     <outputs>
-        <data name="out_file" format="tabular" label="${tool.name} ${statistic} scores on ${on_string}"/>
+        <data name="out_file" format="tabular" label="${tool.name} ${statistic} on ${on_string}"/>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
@@ -101,7 +121,6 @@ mv '$outname' '$out_file'
                 <assert_contents>
                     <has_text text="chr"/>
                     <has_text text="ihs"/>
-                    <has_n_lines n="89"/>
                 </assert_contents>
             </output>
         </test>
@@ -146,6 +165,17 @@ mv '$outname' '$out_file'
                 </assert_contents>
             </output>
         </test>
+        <test expect_num_outputs="1">
+            <param name="statistic" value="pi"/>
+            <param name="in_file" value="selscan.vcf" ftype="vcf"/>
+            <param name="map_file" value="selscan.map" ftype="tabular"/>
+            <output name="out_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="0.506013"/>
+                    <has_n_lines n="100"/>
+                </assert_contents>
+            </output>
+        </test>
     </tests>
     <help format="markdown"><![CDATA[
 **What it does**
@@ -162,25 +192,23 @@ selscan is "dumb" with respect to ancestral/derived coding and simply expects ha
 - **XP-nSL** — cross-population version of nSL. Requires a reference population; does not require a genetic map.
 - **iHH12** — detects hard and soft sweeps using the sum of the two largest haplotype homozygosity classes. Requires a genetic map.
 - **EHH** — extended haplotype homozygosity at a single locus. Requires a genetic map and a locus ID.
-- **pi** — mean pairwise nucleotide diversity in sliding windows. Does not require a genetic map.
+- **pi** — mean pairwise nucleotide diversity in sliding windows. Requires a genetic map.
 
 **Input**
 
 - **VCF** — phased haplotype data coded 0/1 (no missing genotypes allowed). Both plain VCF and bgzipped VCF are accepted.
 - **Reference VCF** — required for XP-EHH and XP-nSL. Must contain the same loci as the query file.
-- **Genetic map** — tab-delimited file with one row per variant: `<chr#> <locusID> <genetic position> <physical position>`. Required for iHS, XP-EHH, EHH and iHH12 when using VCF input.
+- **Genetic map** — tab-delimited file with one row per variant: `<chr#> <locusID> <genetic position> <physical position>`. Required for iHS, XP-EHH, EHH, iHH12 and pi when using VCF input.
 
 **Output**
 
 The tool produces a tab-delimited score file with a header line and one row per locus (or per window for pi). The columns depend on the selected statistic:
 
-- iHS/nSL: `chr id pos freq ihh1 ihh0 <stat>`
-- XP-EHH/XP-nSL: `chr id pos gpos p1 ihh1 p2 ihh2 <stat>`
-- iHH12: `chr id pos freq ihh12`
-- EHH: `chr pdist gdist derEHH ancEHH EHH`
-- pi: `start end pi`
-
-The iHS/nSL and XP-EHH/XP-nSL scores are unstandardized. Use the **selscan norm** tool to standardize them (and to generate windowed summaries).
+- **iHS / nSL** — `chr id pos freq ihh1 ihh0 <stat>`
+- **XP-EHH / XP-nSL** — `chr id pos gpos p1 ihh1 p2 ihh2 <stat>`
+- **iHH12** — `chr id pos freq ihh12`
+- **EHH** — `chr pdist gdist derEHH ancEHH EHH`
+- **pi** — `start end pi`
 
 **Attribution**
 

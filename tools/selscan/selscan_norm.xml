@@ -7,9 +7,7 @@
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
-#for $f in $in_files
-  ln -s '$f' '${f.element_identifier}' &&
-#end for
+ln -s '$in_file' '${in_file.element_identifier}' &&
 selscan norm
 #if $norm_stat == 'ihs'
   --ihs
@@ -20,10 +18,7 @@ selscan norm
 #elif $norm_stat == 'xpnsl'
   --xpnsl
 #end if
---files
-#for $f in $in_files
-  '${f.element_identifier}'
-#end for
+--files '${in_file.element_identifier}'
 --crit-val $crit_val
 #if $crit_percent
   --crit-percent $crit_percent
@@ -43,14 +38,10 @@ selscan norm
 #if $norm_stat == 'ihs' or $norm_stat == 'nsl'
   #set $norm_suffix = '.' + str($bins) + 'bins.norm'
 #end if
-#for $f in $in_files
-  mv '${f.element_identifier}${norm_suffix}' '${f.element_identifier}.normed' &&
-#end for
-#set $first = $in_files[0].element_identifier
 #if $window_analysis['do_windows'] == 'yes'
-  mv '${first}${norm_suffix}.${str(int($window_analysis.winsize) // 1000)}kb.windows' '$windows_file' &&
+  mv '${in_file.element_identifier}${norm_suffix}.${str(int($window_analysis.winsize) // 1000)}kb.windows' '$windows_file' &&
 #end if
-mv '${first}.normed' '$norm_file'
+mv '${in_file.element_identifier}${norm_suffix}' '$norm_file'
     ]]></command>
     <inputs>
         <param name="norm_stat" type="select" label="Statistic to normalize">
@@ -59,7 +50,7 @@ mv '${first}.normed' '$norm_file'
             <option value="xpehh">XP-EHH</option>
             <option value="xpnsl">XP-nSL</option>
         </param>
-        <param name="in_files" type="data" format="tabular" multiple="true" label="selscan score files (.out)" help="The tab-delimited score files produced by the selscan tool for the selected statistic."/>
+        <param name="in_file" type="data" format="tabular" label="selscan score file (.out)" help="The tab-delimited score file produced by the selscan tool for the selected statistic."/>
         <param name="crit_val" type="float" value="2.0" min="0" label="Critical value" help="The absolute normalized score threshold used to flag extreme (candidate) SNPs. A SNP is flagged if its normalized score is above this value or below its negative."/>
         <param name="crit_percent" type="float" optional="true" min="0" max="1" label="Critical percentile" help="If set, the critical value is instead computed as the (1 - p/2) and (p/2) quantiles of the sorted normalized scores. Overrides the critical value."/>
         <param name="qbins" type="integer" value="10" min="1" label="Quantile bins" help="Outlying windows are binned by the number of sites within each window. This is the number of quantile bins to use."/>
@@ -85,7 +76,7 @@ mv '${first}.normed' '$norm_file'
     <tests>
         <test expect_num_outputs="1">
             <param name="norm_stat" value="ihs"/>
-            <param name="in_files" value="selscan.ihs.out" ftype="tabular"/>
+            <param name="in_file" value="selscan.ihs.out" ftype="tabular"/>
             <output name="norm_file" ftype="tabular">
                 <assert_contents>
                     <has_text text="norm_ihs"/>
@@ -112,7 +103,7 @@ When window analysis is enabled, the normalized scores are summarized in non-ove
 
 **Input**
 
-One or more tab-delimited score files produced by the **selscan** tool for the selected statistic. The files must contain the header line and chromosome column produced by selscan v3.0.0+.
+A tab-delimited score file produced by the **selscan** tool for the selected statistic. The file must contain the header line and chromosome column produced by selscan v3.0.0+.
 
 **Attribution**
 

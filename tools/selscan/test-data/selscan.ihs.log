@@ -1,0 +1,4 @@
+selscan v3.0.1
+selscan --ihs --vcf selscan.vcf --map selscan.map --maf 0.05 --cutoff 0.05 --max-extend 1000000 --max-extend-nsl 100 --ehh-win 100000 --gap-scale 20000 --max-gap 200000 --threads 4 --out selscan 
+Opening selscan.vcf to count number of haplotypes and loci...
+[ERROR] Failed to open selscan.vcf for reading.

@@ -1,5 +1,5 @@
 name: selscan
-owner: d-callan
+owner: iuc
 description: EHH-based haplotype scans for positive selection (EHH, iHS, XP-EHH, nSL, XP-nSL, iHH12, pi) and score normalization
 categories:
 - Sequence Analysis

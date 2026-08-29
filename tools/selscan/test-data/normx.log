@@ -1,0 +1,6 @@
+norm --xpehh --files myxpehh.out --crit-val 2.0 --qbins 10 --log normx.log 
+
+
+Total loci: 87
+num	mean	variance
+87	0.00119098	0.000214972
