@@ -7,9 +7,17 @@
     <expand macro="requirements"/>
     <version_command><![CDATA[iqtree3 --version 2>&1 | head -1]]></version_command>
     <command detect_errors="aggressive"><![CDATA[
+## if skip_bootstrap_for_small_alignments is set, we are allowed to add an additional parameter if the number of unique sequences is below a threshold
 #if $bootstrap_parameters.ultrafast_bootstrap.skip_bootstrap_for_small_alignments and $general_options.s and $general_options.s.ext == 'fasta'
     n_unique=\$(awk '/^>/{if(seq!="")print seq; seq=""; next}{seq=seq \$0}END{if(seq!="")print seq}' '$general_options.s' | sort -u | wc -l) &&
+    if [[ "$n_unique" -ge 4 ]]; then
+        UFBOOT="--ufboot '$bootstrap_parameters.ultrafast_bootstrap.ufboot'"
+    fi
+    &&
+#else
+    UFBOOT="--ufboot '$bootstrap_parameters.ultrafast_bootstrap.ufboot'" &&
 #end if
+
 iqtree3
     --prefix PREF
     #if $general_options.short_alignments:
@@ -310,12 +318,10 @@ $tree_parameters.tree_topology.test_au
     --rlen $tree_parameters.generating_random.branch_min $tree_parameters.generating_random.branch_mean $tree_parameters.generating_random.branch_max
 #end if
 
+## we have constructed this bash environment variable beforhand, depending several given user params
+
 #if str($bootstrap_parameters.ultrafast_bootstrap.ufboot) != ''
-    #if $bootstrap_parameters.ultrafast_bootstrap.skip_bootstrap_for_small_alignments and $general_options.s and $general_options.s.ext == 'fasta'
-        \$( [ "\$n_unique" -ge 4 ] 2>/dev/null && echo "--ufboot '$bootstrap_parameters.ultrafast_bootstrap.ufboot'" )
-    #else
-        --ufboot '$bootstrap_parameters.ultrafast_bootstrap.ufboot'
-    #end if
+    \$UFBOOT
 #end if
 
 #if str($bootstrap_parameters.ultrafast_bootstrap.ufjack) != ''
