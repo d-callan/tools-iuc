@@ -1,4 +1,4 @@
-norm --ihs --files myfile2.out --crit-val 2.0 --qbins 10 --bins 100 --bp-win --winsize 100000 --min-snps 10 --log norm2.log 
+norm --ihs --files selscan.ihs.out --crit-val 2.0 --qbins 10 --bins 100 --bp-win --winsize 100000 --min-snps 10 --log norm2.log 
 
 
 Total loci: 88

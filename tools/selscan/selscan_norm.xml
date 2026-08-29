@@ -7,7 +7,6 @@
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
-ln -s '$in_file' '${in_file.element_identifier}' &&
 selscan norm
 #if $norm_stat == 'ihs'
   --ihs
@@ -18,7 +17,7 @@ selscan norm
 #elif $norm_stat == 'xpnsl'
   --xpnsl
 #end if
---files '${in_file.element_identifier}'
+--files '$in_file'
 --crit-val $crit_val
 #if $crit_percent
   --crit-percent $crit_percent
@@ -39,9 +38,9 @@ selscan norm
   #set $norm_suffix = '.' + str($bins) + 'bins.norm'
 #end if
 #if $window_analysis['do_windows'] == 'yes'
-  mv '${in_file.element_identifier}${norm_suffix}.${str(int($window_analysis.winsize) // 1000)}kb.windows' '$windows_file' &&
+  mv '${in_file}${norm_suffix}.${str(int($window_analysis.winsize) // 1000)}kb.windows' '$windows_file' &&
 #end if
-mv '${in_file.element_identifier}${norm_suffix}' '$norm_file'
+mv '${in_file}${norm_suffix}' '$norm_file'
     ]]></command>
     <inputs>
         <param name="norm_stat" type="select" label="Statistic to normalize">
@@ -92,7 +91,7 @@ The `selscan norm` subcommand standardizes the unstandardized iHS, nSL, XP-EHH a
 
 **Normalization**
 
-- **iHS / nSL** — scores are binned by derived allele frequency into `bins` frequency bins in [0,1]. Within each bin the mean and variance are computed, and each score is standardized as `(x - mean) / sqrt(variance)`. Only bins containing at least 20 SNPs are reported.
+- **iHS / nSL** — scores are binned by derived allele frequency into `bins` frequency bins in [0,1]. Within each bin the mean and variance are computed, and each score is standardized as `(x - mean) / sqrt(variance)`. Only bins containing at least 20 SNPs are reported. The **Frequency bins** parameter only applies to iHS and nSL.
 - **XP-EHH / XP-nSL** — scores are standardized using a single bin (the whole genome).
 
 A SNP is flagged as a candidate (the `crit` column is set to 1) if its normalized score is at or above the critical value, or at or below its negative. If a critical percentile is given, the critical value is instead computed from the quantiles of the sorted scores.

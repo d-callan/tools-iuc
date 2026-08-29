@@ -7,44 +7,38 @@
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
-#set $outname = 'selscan.' + $statistic + '.out'
-#if $statistic == 'ehh'
+#set $stat = str($statistic)
+#set $outname = 'selscan.' + $stat + '.out'
+#if $stat == 'ehh'
   #set $outname = 'selscan.ehh.' + str($locus_id) + '.out'
-#elif $statistic == 'pi'
+#elif $stat == 'pi'
   #set $outname = 'selscan.pi.' + str($pi_win) + 'bp.out'
 #end if
 #if $alt
   #set $outname = $outname + '.alt'
 #end if
-ln -s '$in_file' '${in_file.element_identifier}' &&
-#if $ref_file
-  ln -s '$ref_file' '${ref_file.element_identifier}' &&
-#end if
-#if $map_file
-  ln -s '$map_file' '${map_file.element_identifier}' &&
-#end if
 selscan
-#if $statistic == 'ihs'
+#if $stat == 'ihs'
   --ihs
-#elif $statistic == 'nsl'
+#elif $stat == 'nsl'
   --nsl
-#elif $statistic == 'xpehh'
+#elif $stat == 'xpehh'
   --xpehh
-#elif $statistic == 'xpnsl'
+#elif $stat == 'xpnsl'
   --xpnsl
-#elif $statistic == 'ihh12'
+#elif $stat == 'ihh12'
   --ihh12
-#elif $statistic == 'ehh'
+#elif $stat == 'ehh'
   --ehh $locus_id
-#elif $statistic == 'pi'
+#elif $stat == 'pi'
   --pi --pi-win $pi_win
 #end if
---vcf '${in_file.element_identifier}'
+--vcf '$in_file'
 #if $ref_file
-  --vcf-ref '${ref_file.element_identifier}'
+  --vcf-ref '$ref_file'
 #end if
 #if $map_file
-  --map '${map_file.element_identifier}'
+  --map '$map_file'
 #end if
 --maf $maf
 --cutoff $cutoff
@@ -193,6 +187,8 @@ selscan is "dumb" with respect to ancestral/derived coding and simply expects ha
 - **iHH12** — detects hard and soft sweeps using the sum of the two largest haplotype homozygosity classes. Requires a genetic map.
 - **EHH** — extended haplotype homozygosity at a single locus. Requires a genetic map and a locus ID.
 - **pi** — mean pairwise nucleotide diversity in sliding windows. Requires a genetic map.
+
+The **Locus ID for EHH** parameter is only used when the **EHH** statistic is selected, and the **pi window size** parameter is only used when the **pi** statistic is selected.
 
 **Input**
 

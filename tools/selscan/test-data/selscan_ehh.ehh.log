@@ -1,5 +1,5 @@
 selscan v3.0.1
-selscan --ehh rs5 --vcf selscan.vcf --map selscan.map --maf 0.05 --cutoff 0.05 --max-extend 1000000 --max-extend-nsl 100 --ehh-win 100000 --gap-scale 20000 --max-gap 200000 --threads 4 --out selscan 
+selscan --ehh rs5 --vcf selscan.vcf --map selscan.map --maf 0.05 --cutoff 0.05 --max-extend 1000000 --max-extend-nsl 100 --ehh-win 100000 --gap-scale 20000 --max-gap 200000 --threads 1 --out selscan_ehh 
 Opening selscan.vcf to count number of haplotypes and loci...
 --skip-low-freq set. Removing all variants < 0.05.
 
@@ -7,5 +7,5 @@ Loading 80 haplotypes and 100 loci. Skipped 0 loci
 
 Removed 0 low frequency variants from haplotype data.
 ====
-Input file loaded in 0.000372 s.
+Input file loaded in 0.000595 s.
 =====
