@@ -13,6 +13,8 @@ pyrho hyperparam
 @DEMOGRAPHY@
 -bpen '$blockpenalty'
 -w '$windowsize'
+--metawindow $metawindow
+--overlap $overlap
 --num_sims $num_sims
 --ploidy $ploidy
 @THREADS@

@@ -27,3 +27,12 @@ All four tools pass planemo lint. Test commands verified working directly via co
 ## Feedback round 2b (validator)
 
 The validator flagged `value="0.5"` in the compute_r2 test param as a missing test-data file reference. Removed the explicit `quantiles` param from the test — it now relies on the input's default value of "0.5" (which is passed via `--quantiles '$quantiles'` in the command). Verified the output still contains the "0.5" column and 191 lines.
+
+## Feedback round 4
+
+Feedback round 2 fixes:
+- Root cause of all 4 test failures: both binary test-data files (lookup_table.h5, short.vcf.gz) were corrupted (written as text with UTF-8 replacement chars). Regenerated both as valid binaries via conda: lookup_table.h5 via `pyrho make_table` (85168 bytes, key 'ldtable'), short.vcf.gz via writing a 10-SNP diploid VCF and gzip-compressing.
+- pyrho_optimize.xml: test assertion was has_n_lines n="2" but actual output is 9 data lines (10 SNPs → 9 intervals). Changed to has_n_lines n="9" delta="0". Also added --metawindow $metawindow --overlap $overlap to the command (previously the macro_common_optimize params were exposed but never emitted).
+- pyrho_hyperparam.xml: added --metawindow $metawindow --overlap $overlap to command (same functional bug).
+- .shed.yml: changed owner from d-callan to iuc (tools-iuc repo requires owner: iuc).
+- Verified all 4 CLI commands run successfully with regenerated test data (make_table, compute_r2, hyperparam, optimize all exit 0 with expected outputs). planemo lint passes on all 4 tools.

@@ -1,6 +1,6 @@
 ---
 name: pyrho
-owner: d-callan
+owner: iuc
 description: Demography-aware inference of fine-scale recombination rates using fused-LASSO
 categories:
 - Sequence Analysis
