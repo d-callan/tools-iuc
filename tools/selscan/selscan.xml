@@ -1,5 +1,5 @@
 <tool id="selscan" name="selscan" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
-    <description>EHH-based haplotype scans for positive selection (EHH, iHS, XP-EHH, nSL, XP-nSL, iHH12, pi)</description>
+    <description>EHH-based haplotype scans for positive selection (iHS, XP-EHH, nSL, XP-nSL, iHH12)</description>
     <macros>
         <import>macros.xml</import>
     </macros>
@@ -9,11 +9,6 @@
     <command detect_errors="aggressive"><![CDATA[
 #set $stat = str($statistic)
 #set $outname = 'selscan.' + $stat + '.out'
-#if $stat == 'ehh'
-  #set $outname = 'selscan.ehh.' + str($locus_id) + '.out'
-#elif $stat == 'pi'
-  #set $outname = 'selscan.pi.' + str($pi_win) + 'bp.out'
-#end if
 #if $alt
   #set $outname = $outname + '.alt'
 #end if
@@ -28,10 +23,6 @@ selscan
   --xpnsl
 #elif $stat == 'ihh12'
   --ihh12
-#elif $stat == 'ehh'
-  --ehh $locus_id
-#elif $stat == 'pi'
-  --pi --pi-win $pi_win
 #end if
 --vcf '$in_file'
 #if $ref_file
@@ -80,12 +71,10 @@ mv '$outname' '$out_file'
             <option value="xpehh">XP-EHH</option>
             <option value="xpnsl">XP-nSL</option>
             <option value="ihh12">iHH12</option>
-            <option value="ehh">EHH</option>
-            <option value="pi">pi</option>
         </param>
         <param name="in_file" type="data" format="vcf,vcf_bgzip" label="Phased VCF" help="Phased haplotype data coded 0/1. No missing genotypes are allowed."/>
         <param name="ref_file" type="data" format="vcf,vcf_bgzip" optional="true" label="Reference population VCF" help="Required for XP-EHH and XP-nSL. Must contain the same loci as the query file."/>
-        <param name="map_file" type="data" format="tabular" optional="true" label="Genetic map" help="Tab-delimited file with one row per variant: &lt;chr#&gt; &lt;locusID&gt; &lt;genetic position&gt; &lt;physical position&gt;. Required for iHS, XP-EHH, EHH, iHH12 and pi."/>
+        <param name="map_file" type="data" format="tabular" optional="true" label="Genetic map" help="Tab-delimited file with one row per variant: &lt;chr#&gt; &lt;locusID&gt; &lt;genetic position&gt; &lt;physical position&gt;. Required for iHS, XP-EHH and iHH12."/>
         <param name="maf" type="float" value="0.05" min="0" max="0.5" label="Minor allele frequency cutoff" help="Sites with minor allele frequency below this value are excluded."/>
         <param name="cutoff" type="float" value="0.05" min="0" max="0.5" label="EHH decay cutoff" help="The EHH decay cutoff used when integrating EHH to compute iHH."/>
         <param name="max_extend" type="integer" value="1000000" min="1" label="Maximum extension distance (bp)" help="The maximum distance in base pairs to extend EHH decay."/>
@@ -100,8 +89,6 @@ mv '$outname' '$out_file'
         <param name="wagh" type="boolean" checked="false" label="Weighted average haplotype homozygosity" help="Use weighted average haplotype homozygosity."/>
         <param name="alt" type="boolean" checked="false" label="Compute alternate allele scores" help="Also compute scores for the alternate allele."/>
         <param name="ihs_detail" type="boolean" checked="false" label="Detailed iHS output" help="Output additional detail for iHS."/>
-        <param name="locus_id" type="text" label="Locus ID for EHH" help="The locus ID (variant ID) at which to compute EHH. Only used when the EHH statistic is selected."/>
-        <param name="pi_win" type="integer" value="100" min="1" label="pi window size (bp)" help="The sliding window size in base pairs for the pi statistic. Only used when the pi statistic is selected."/>
     </inputs>
     <outputs>
         <data name="out_file" format="tabular" label="${tool.name} ${statistic} on ${on_string}"/>
@@ -148,33 +135,16 @@ mv '$outname' '$out_file'
                 </assert_contents>
             </output>
         </test>
-        <test expect_num_outputs="1">
-            <param name="statistic" value="ehh"/>
-            <param name="in_file" value="selscan.vcf" ftype="vcf"/>
-            <param name="map_file" value="selscan.map" ftype="tabular"/>
-            <param name="locus_id" value="rs5"/>
-            <output name="out_file" ftype="tabular">
-                <assert_contents>
-                    <has_text text="EHH"/>
-                </assert_contents>
-            </output>
-        </test>
-        <test expect_num_outputs="1">
-            <param name="statistic" value="pi"/>
-            <param name="in_file" value="selscan.vcf" ftype="vcf"/>
-            <param name="map_file" value="selscan.map" ftype="tabular"/>
-            <output name="out_file" ftype="tabular">
-                <assert_contents>
-                    <has_text text="0.506013"/>
-                    <has_n_lines n="100"/>
-                </assert_contents>
-            </output>
-        </test>
+        <!-- EHH and pi options removed: selscan v3.0.1 segfaults on Linux
+             when computing EHH (even with the official example data) and pi
+             (intermittently, with various input sizes and spacings). The root
+             cause was never fully pinned down. These options are not exposed
+             to avoid shipping a wrapper that is likely to break. -->
     </tests>
     <help format="markdown"><![CDATA[
 **What it does**
 
-selscan is a multithreaded program that calculates EHH-based haplotype scans for positive selection in genomes. It implements the EHH, iHS, XP-EHH, nSL, XP-nSL and iHH12 statistics, as well as a pairwise nucleotide diversity (pi) sliding-window mode.
+selscan is a multithreaded program that calculates EHH-based haplotype scans for positive selection in genomes. It implements the iHS, XP-EHH, nSL, XP-nSL and iHH12 statistics.
 
 selscan is "dumb" with respect to ancestral/derived coding and simply expects haplotype data to be coded 0/1. Unstandardized iHS/nSL scores are thus reported as log(iHH1/iHH0) based on the coding you have provided. It should be run separately for each chromosome and population (or population pair for XP-EHH / XP-nSL).
 
@@ -185,26 +155,20 @@ selscan is "dumb" with respect to ancestral/derived coding and simply expects ha
 - **XP-EHH** (cross-population EHH) — compares EHH between two populations to detect selective sweeps that have gone to fixation in one population. Requires a reference population and a genetic map.
 - **XP-nSL** — cross-population version of nSL. Requires a reference population; does not require a genetic map.
 - **iHH12** — detects hard and soft sweeps using the sum of the two largest haplotype homozygosity classes. Requires a genetic map.
-- **EHH** — extended haplotype homozygosity at a single locus. Requires a genetic map and a locus ID.
-- **pi** — mean pairwise nucleotide diversity in sliding windows. Requires a genetic map.
-
-The **Locus ID for EHH** parameter is only used when the **EHH** statistic is selected, and the **pi window size** parameter is only used when the **pi** statistic is selected.
 
 **Input**
 
 - **VCF** — phased haplotype data coded 0/1 (no missing genotypes allowed). Both plain VCF and bgzipped VCF are accepted.
 - **Reference VCF** — required for XP-EHH and XP-nSL. Must contain the same loci as the query file.
-- **Genetic map** — tab-delimited file with one row per variant: `<chr#> <locusID> <genetic position> <physical position>`. Required for iHS, XP-EHH, EHH, iHH12 and pi when using VCF input.
+- **Genetic map** — tab-delimited file with one row per variant: `<chr#> <locusID> <genetic position> <physical position>`. Required for iHS, XP-EHH and iHH12 when using VCF input.
 
 **Output**
 
-The tool produces a tab-delimited score file with a header line and one row per locus (or per window for pi). The columns depend on the selected statistic:
+The tool produces a tab-delimited score file with a header line and one row per locus. The columns depend on the selected statistic:
 
 - **iHS / nSL** — `chr id pos freq ihh1 ihh0 <stat>`
 - **XP-EHH / XP-nSL** — `chr id pos gpos p1 ihh1 p2 ihh2 <stat>`
 - **iHH12** — `chr id pos freq ihh12`
-- **EHH** — `chr pdist gdist derEHH ancEHH EHH`
-- **pi** — `start end pi`
 
 **Attribution**
 
