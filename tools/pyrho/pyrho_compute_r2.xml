@@ -37,7 +37,7 @@ pyrho compute_r2
                     <has_text text="r"/>
                     <has_text text="mean"/>
                     <has_text text="0.5"/>
-                    <has_n_lines n="191" delta="0"/>
+                    <has_n_lines n="192" delta="0"/>
                 </assert_contents>
             </output>
         </test>
