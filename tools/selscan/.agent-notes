@@ -1,0 +1,25 @@
+# Agent Notes
+
+## Feedback round 1
+
+Round: no specific PR feedback provided (all CI checks skipped). Verified the selscan tool suite is in a clean state:
+- All 5 planemo tests pass (4 selscan + 1 selscan_norm).
+- planemo lint clean on both selscan.xml and selscan_norm.xml (no warnings).
+- .shed.yml categories (Sequence Analysis, Variant Analysis) are valid Tool Shed categories.
+- bio.tools xref 'selscan' confirmed valid via search_bio_tools.
+- version_command `selscan --help 2>&1 | head -n 5` outputs 'selscan v3.0.1' correctly (verified in conda).
+- Note: selscan norm subcommand internally reports 'selscan v3.0.0' in its stderr banner even though the package is 3.0.1 — this is an upstream cosmetic string, not a wrapper issue.
+No file changes were required this round.
+
+## Feedback round 2
+
+Round 2 fixes (concrete changes made):
+1. selscan.xml — removed the "Attribution" section from help (IUC convention: no authorship/attribution in help). Help rewritten in clean Markdown with sections separated by horizontal rules.
+2. selscan_norm.xml — removed Attribution section from help; help rewritten in Markdown.
+3. .shed.yml — removed misleading references to EHH and pi statistics in description/long_description, since those options are NOT exposed in the wrapper (removed due to upstream segfaults). Description now lists only the implemented stats (iHS, XP-EHH, nSL, XP-nSL, iHH12).
+4. Verified the windows output filename pattern via run_in_conda: `input.out.100bins.norm.100kb.windows` — matches the command construction `input.out${norm_suffix}.${winsize/1000}kb.windows`.
+All 5 planemo tests pass; planemo lint clean on both tools and .shed.yml.
+
+## Feedback round 3
+
+Round 3 fix: validation flagged 'cp' in selscan_norm.xml command (convention: use mv instead of cp). Replaced `cp '$in_file' input.out` with `ln -s '$in_file' input.out`. The symlink gives selscan norm the fixed working name 'input.out' (from which it derives output filenames) without copying. Verified via planemo test: all 5 tests pass, lint clean.

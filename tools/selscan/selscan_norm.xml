@@ -7,7 +7,7 @@
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
-cp '$in_file' input.out &&
+ln -s '$in_file' input.out &&
 selscan norm
 #if $norm_stat == 'ihs'
   --ihs
@@ -104,10 +104,6 @@ When window analysis is enabled, the normalized scores are summarized in non-ove
 **Input**
 
 A tab-delimited score file produced by the **selscan** tool for the selected statistic. The file must contain the header line and chromosome column produced by selscan v3.0.0+.
-
-**Attribution**
-
-This Galaxy tool wraps the selscan program (https://github.com/szpiech/selscan), developed by Zachary A. Szpiech.
     ]]></help>
     <expand macro="citations"/>
 </tool>

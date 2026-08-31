@@ -169,10 +169,6 @@ The tool produces a tab-delimited score file with a header line and one row per 
 - **iHS / nSL** — `chr id pos freq ihh1 ihh0 <stat>`
 - **XP-EHH / XP-nSL** — `chr id pos gpos p1 ihh1 p2 ihh2 <stat>`
 - **iHH12** — `chr id pos freq ihh12`
-
-**Attribution**
-
-This Galaxy tool wraps the selscan program (https://github.com/szpiech/selscan), developed by Zachary A. Szpiech.
     ]]></help>
     <expand macro="citations"/>
 </tool>
