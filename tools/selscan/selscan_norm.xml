@@ -7,6 +7,7 @@
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
+cp '$in_file' input.out &&
 selscan norm
 #if $norm_stat == 'ihs'
   --ihs
@@ -17,7 +18,7 @@ selscan norm
 #elif $norm_stat == 'xpnsl'
   --xpnsl
 #end if
---files '$in_file'
+--files input.out
 --crit-val $crit_val
 #if $crit_percent
   --crit-percent $crit_percent
@@ -38,9 +39,9 @@ selscan norm
   #set $norm_suffix = '.' + str($bins) + 'bins.norm'
 #end if
 #if $window_analysis['do_windows'] == 'yes'
-  mv '${in_file}${norm_suffix}.${str(int($window_analysis.winsize) // 1000)}kb.windows' '$windows_file' &&
+  mv 'input.out${norm_suffix}.${str(int($window_analysis.winsize) // 1000)}kb.windows' '$windows_file' &&
 #end if
-mv '${in_file}${norm_suffix}' '$norm_file'
+mv 'input.out${norm_suffix}' '$norm_file'
     ]]></command>
     <inputs>
         <param name="norm_stat" type="select" label="Statistic to normalize">
