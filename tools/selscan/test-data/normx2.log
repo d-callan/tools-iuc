@@ -1,6 +1,0 @@
-norm --xpehh --files myxpehh2.out --crit-val 2.0 --qbins 10 --bp-win --winsize 100000 --min-snps 10 --log normx2.log 
-
-
-Total loci: 87
-num	mean	variance
-87	0.00119098	0.000214972
