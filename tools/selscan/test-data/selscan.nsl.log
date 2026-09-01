@@ -1,0 +1,68 @@
+selscan v3.0.1
+selscan --nsl --vcf selscan.vcf --maf 0.05 --cutoff 0.05 --max-extend 1000000 --max-extend-nsl 100 --ehh-win 100000 --gap-scale 20000 --max-gap 200000 --threads 4 --out selscan 
+Opening selscan.vcf to count number of haplotypes and loci...
+--skip-low-freq set. Removing all variants < 0.05.
+
+Loading 80 haplotypes and 100 loci. Skipped 0 loci 
+
+Removed 0 low frequency variants from haplotype data.
+====
+Input file loaded in 0.000324 s.
+=====
+
+v3.0.1
+Calculating nSL.
+=====
+Input (VCF) filename: selscan.vcf
+Map filename: __mapfile
+Output file: selscan
+Threads: 4
+Scale parameter: 20000
+Max gap parameter: 200000
+EHH cutoff value: 0.05
+Minimum MAF cutoff: 0.05
+Phased: yes
+Alt flag set: no
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 100 id: rs1
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 400 id: rs4
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 500 id: rs5
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 300 id: rs3
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 600 id: rs6
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 700 id: rs7
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 800 id: rs8
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 900 id: rs9
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 1000 id: rs10
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 1100 id: rs11
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 200 id: rs2
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9100 id: rs91
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9200 id: rs92
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9300 id: rs93
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9400 id: rs94
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9500 id: rs95
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9600 id: rs96
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9900 id: rs99
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9700 id: rs97
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 9800 id: rs98
+Skipping calculation.
+WARNING: Reached chromosome edge before EHH decayed below 0.05. position: 10000 id: rs100
+Skipping calculation.
+Program took 0.102132 seconds to complete. Total CPU time: 0.311307 s. 
