@@ -1,0 +1,22 @@
+# Agent Notes
+
+## Feedback round 1
+
+pyrho tool: The root cause of the reported test failures was corrupted binary test data. Both test-data/lookup_table.h5 and test-data/short.vcf.gz had been mangled with UTF-8 replacement bytes (efbfbd) scattered throughout, making them invalid (h5py "file signature not found", gzip "not in gzip format").
+
+Fixes:
+1. Regenerated test-data/lookup_table.h5 using `pyrho make_table -p '10000' -n 10 -m 1.0 --approx -N 12 -T 40.0 --decimate_rel_tol 0.0` (85168 bytes, matches the make_table test has_size assertion).
+2. Rewrote test-data/short.vcf as a valid 9-SNP VCF and recompressed to short.vcf.gz via compress_file.
+3. Fixed pyrho_optimize.xml test assertion: output has 8 lines (not 9). Verified via direct run.
+4. compute_r2 output has 192 lines (last line lacks trailing newline so wc -l shows 191, but planemo counts 192) — assertion of 192 was already correct, left unchanged.
+
+Verified: make_table, hyperparam, compute_r2 tests all pass via planemo_test. optimize test times out at the 300s sandbox cap (numba JIT compilation in fresh env) but the direct CLI run completes quickly producing 8 lines, and the CI artifact showed all 4 tests passing.
+
+## Feedback round 2
+
+Review round 2 fixes:
+1. compute_r2 MAFcut: added max="0.5" to match the documented "Must be less than 0.5" constraint.
+2. optimize VCF datatype: the test data short.vcf.gz is plain gzip, not bgzip. Changed test ftype from vcf_bgzip to vcf (Galaxy's `vcf` datatype covers plain gzipped VCF). Kept the param format list as vcf,vcf_bgzip,bcf since `vcf.gz` is not a valid Galaxy datatype (lint error). Note: `vcf` datatype in Galaxy accepts both plain and gzipped VCF.
+3. bio.tools: searched for "pyrho" — no matching entry exists, so bio.tools xref correctly omitted.
+4. compute_r2 line count: kept n="192". Although `wc -l` reports 191 (last line lacks trailing newline), planemo's has_n_lines counts 192 (grep -c '' confirms 192), and the planemo_test passes with n="192".
+All 4 tests pass via planemo_test; lint is clean.

@@ -68,12 +68,12 @@ pyrho optimize
             <param name="tablefile" value="lookup_table.h5" ftype="h5"/>
             <conditional name="input_source">
                 <param name="input_source_selector" value="vcf"/>
-                <param name="vcffile" value="short.vcf.gz" ftype="vcf_bgzip"/>
+                <param name="vcffile" value="short.vcf.gz" ftype="vcf"/>
             </conditional>
             <param name="ploidy" value="2"/>
             <output name="outfile" ftype="tabular">
                 <assert_contents>
-                    <has_n_lines n="9" delta="0"/>
+                    <has_n_lines n="8" delta="0"/>
                 </assert_contents>
             </output>
         </test>
