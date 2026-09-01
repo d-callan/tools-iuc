@@ -84,6 +84,37 @@ mv 'input.out${norm_suffix}' '$norm_file'
                 </assert_contents>
             </output>
         </test>
+        <!-- Window-analysis path: exercises the windows_file output and its
+             filter, and the .<bins>bins.norm.<winsize>kb.windows filename. -->
+        <test expect_num_outputs="2">
+            <param name="norm_stat" value="ihs"/>
+            <param name="in_file" value="selscan.ihs.out" ftype="tabular"/>
+            <param name="window_analysis|do_windows" value="yes"/>
+            <param name="window_analysis|winsize" value="100000"/>
+            <param name="window_analysis|min_snps" value="10"/>
+            <output name="norm_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="norm_ihs"/>
+                </assert_contents>
+            </output>
+            <output name="windows_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="frac_extreme"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- XP-EHH normalization: covers the .norm suffix path (XP stats use
+             a single bin and write input.out.norm, not .<bins>bins.norm). -->
+        <test expect_num_outputs="1">
+            <param name="norm_stat" value="xpehh"/>
+            <param name="in_file" value="selscan.xpehh.out" ftype="tabular"/>
+            <output name="norm_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="norm_xpehh"/>
+                    <has_text text="crit"/>
+                </assert_contents>
+            </output>
+        </test>
     </tests>
     <help format="markdown"><![CDATA[
 **What it does**

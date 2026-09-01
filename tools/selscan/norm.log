@@ -1,4 +1,4 @@
-norm --ihs --files selscan.ihs.out --crit-val 2.0 --qbins 10 --bins 100 --log norm.log 
+norm --ihs --files test-data/selscan.ihs.out --crit-val 2.0 --qbins 10 --bins 100 --log norm.log 
 
 
 Total loci: 88

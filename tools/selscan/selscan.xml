@@ -10,7 +10,7 @@
 #set $stat = str($statistic)
 #set $outname = 'selscan.' + $stat + '.out'
 #if $alt
-  #set $outname = $outname + '.alt'
+  #set $outname = 'selscan.' + $stat + '.alt.out'
 #end if
 selscan
 #if $stat == 'ihs'
@@ -102,6 +102,7 @@ mv '$outname' '$out_file'
                 <assert_contents>
                     <has_text text="chr"/>
                     <has_text text="ihs"/>
+                    <has_n_lines n="89"/>
                 </assert_contents>
             </output>
         </test>
@@ -111,6 +112,7 @@ mv '$outname' '$out_file'
             <output name="out_file" ftype="tabular">
                 <assert_contents>
                     <has_text text="nsl"/>
+                    <has_n_lines n="80"/>
                 </assert_contents>
             </output>
         </test>
@@ -122,6 +124,18 @@ mv '$outname' '$out_file'
             <output name="out_file" ftype="tabular">
                 <assert_contents>
                     <has_text text="xpehh"/>
+                    <has_n_lines n="88"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="statistic" value="xpnsl"/>
+            <param name="in_file" value="selscan.vcf" ftype="vcf"/>
+            <param name="ref_file" value="selscan_ref.vcf" ftype="vcf"/>
+            <output name="out_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="xpnsl"/>
+                    <has_n_lines n="88"/>
                 </assert_contents>
             </output>
         </test>
@@ -132,6 +146,22 @@ mv '$outname' '$out_file'
             <output name="out_file" ftype="tabular">
                 <assert_contents>
                     <has_text text="ihh12"/>
+                    <has_n_lines n="91"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- alt test: selscan writes the alternate-allele output as
+             selscan.<stat>.alt.out (the .alt goes before .out). -->
+        <test expect_num_outputs="1">
+            <param name="statistic" value="ihs"/>
+            <param name="alt" value="true"/>
+            <param name="in_file" value="selscan.vcf" ftype="vcf"/>
+            <param name="map_file" value="selscan.map" ftype="tabular"/>
+            <output name="out_file" ftype="tabular">
+                <assert_contents>
+                    <has_text text="chr"/>
+                    <has_text text="ihs"/>
+                    <has_n_lines n="87"/>
                 </assert_contents>
             </output>
         </test>
@@ -169,6 +199,8 @@ The tool produces a tab-delimited score file with a header line and one row per 
 - **iHS / nSL** — `chr id pos freq ihh1 ihh0 <stat>`
 - **XP-EHH / XP-nSL** — `chr id pos gpos p1 ihh1 p2 ihh2 <stat>`
 - **iHH12** — `chr id pos freq ihh12`
+
+When **Compute alternate allele scores** is enabled, the alternate-allele scores are returned in place of the default scores.
     ]]></help>
     <expand macro="citations"/>
 </tool>

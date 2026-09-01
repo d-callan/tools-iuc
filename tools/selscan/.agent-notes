@@ -23,3 +23,37 @@ All 5 planemo tests pass; planemo lint clean on both tools and .shed.yml.
 ## Feedback round 3
 
 Round 3 fix: validation flagged 'cp' in selscan_norm.xml command (convention: use mv instead of cp). Replaced `cp '$in_file' input.out` with `ln -s '$in_file' input.out`. The symlink gives selscan norm the fixed working name 'input.out' (from which it derives output filenames) without copying. Verified via planemo test: all 5 tests pass, lint clean.
+
+## Feedback round 4
+
+## Feedback round 4
+
+Round 4 review flagged 1 critical + 3 warnings + 3 suggestions. Findings and fixes:
+
+1. **CRITICAL --alt filename bug (CONFIRMED & FIXED)**: Empirically verified in conda that selscan v3.0.1 writes the alternate-allele output as `selscan.ihs.alt.out` (`.alt` BEFORE `.out`), NOT `selscan.ihs.out.alt`. The wrapper was building `selscan.<stat>.out.alt` which would fail the `mv`. Fixed the command to `#set $outname = 'selscan.' + $stat + '.alt.out'` when `$alt` is set. Added an `--alt` test (ihs, 87 lines) to cover this path.
+
+2. **WARNING norm XP suffix (UNFOUNDED — no change)**: The review claimed `selscan norm --xpehh` writes `input.out.100bins.norm`. Empirically verified it writes `input.out.norm` (single bin for XP stats). The existing wrapper logic (`.norm` for xpehh/xpnsl, `.<bins>bins.norm` for ihs/nsl) is CORRECT. Declined this change. However, added an XP-EHH norm test (uses new test-data/selscan.xpehh.out and selscan.xpehh.out.norm) to cover the `.norm` suffix path.
+
+3. **WARNING test coverage (ADDRESSED)**: Added `--alt` test, `xpnsl` test, and strengthened all asserts with line counts (ihs=89, nsl=80, xpehh=88, xpnsl=88, ihh12=91, alt ihs=87). Added window-analysis test (expect_num_outputs=2, checks windows_file with frac_extreme header) and XP-EHH norm test to selscan_norm.xml.
+
+4. **SUGGESTION cp vs mv (already addressed in round 3)**: selscan_norm uses `ln -s '$in_file' input.out` (not cp) to give selscan norm a fixed working name.
+
+5. **SUGGESTION ihs-detail orphan file (declined)**: When --ihs-detail is set, selscan writes an extra selscan.ihs.alt.out. The wrapper only returns the main .out. Noted in help that alternate-allele scores are returned when --alt is set. Left as-is since it's a minor completeness gap and the detail file is not a primary output.
+
+Note: XML comments cannot contain `--` (double hyphen) — caused a lint parse error initially. Rewrote the alt test comment to avoid `--alt` inside the comment.
+
+Test data regenerated: selscan.ihs.out (89 lines), selscan.xpehh.out (88 lines), selscan.xpehh.out.norm. All 6 selscan tests + 3 selscan_norm tests pass; lint clean on both.
+
+## Feedback round 5
+
+## Round 4 finalization
+
+Validation flagged that test-data/selscan.xpehh.out was referenced in selscan_norm.xml but not tracked (it had been generated via conda, not write_file). Fixed by writing the full 88-line file via write_file. Also deleted the leftover selscan.xpehh.out.norm artifact (not referenced by any test — the norm test generates its own output at runtime).
+
+Final state:
+- selscan.xml: 6 tests pass (ihs, nsl, xpehh, xpnsl, ihh12, alt-ihs), lint clean.
+- selscan_norm.xml: 3 tests pass (ihs, ihs+windows, xpehh), lint clean.
+- .shed.yml: lint clean, valid categories.
+- Test data tracked: selscan.ihs.out, selscan.ihs.out.100bins.norm, selscan.ihs.out.100bins.norm.100kb.windows, selscan.xpehh.out, selscan.map, selscan.vcf, selscan_ref.vcf, norm2.log.
+
+Note: selscan.ihs.out.100bins.norm and selscan.ihs.out.100bins.norm.100kb.windows contain only header lines (the ihs test data has too few SNPs per frequency bin to produce normalized rows). These files exist as tracked test data but are not directly asserted against — the norm tests generate their own outputs at runtime. They were kept from earlier rounds.
