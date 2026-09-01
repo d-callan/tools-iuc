@@ -1,0 +1,99 @@
+<tool id="pyrho_make_table" name="pyrho make_table" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Build a demography-specific two-locus likelihood lookup table</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pyrho make_table
+@DEMOGRAPHY@
+-n $samplesize
+-m $mu
+#if $approx:
+    --approx
+    #if str($moran_pop_size):
+        -N $moran_pop_size
+    #end if
+#end if
+-T $theta
+@THREADS@
+#if str($decimate_rel_tol):
+    --decimate_rel_tol $decimate_rel_tol
+#end if
+#if str($decimate_anc_size):
+    --decimate_anc_size $decimate_anc_size
+#end if
+#if $high_accuracy_stationary:
+    --high_accuracy_stationary
+#end if
+-o '$outfile'
+]]>
+    </command>
+    <inputs>
+        <param name="samplesize" type="integer" min="2" label="Sample size (number of haplotypes)" help="The maximum number of haplotypes for which the lookup table will be valid. Must be at least as large as the number of haplotypes in the data used downstream."/>
+        <param name="mu" type="float" min="0.0" label="Per-generation mutation rate" help="The per-generation mutation rate (e.g. 1.25e-8)."/>
+        <expand macro="macro_demography"/>
+        <param name="approx" type="boolean" checked="true" truevalue="--approx" falsevalue="" label="Use approximate lookup table" help="Use the approximate (Moran model) lookup table. Recommended for sample sizes greater than about 20."/>
+        <param name="moran_pop_size" type="integer" optional="true" label="Moran population size (N)" help="Population size for the approximate Moran model. Only used with --approx. Should be about 25-50% larger than the sample size."/>
+        <param name="theta" type="float" value="0.0005" min="0.0" label="Theta" help="The population-scaled mutation rate used to build the table."/>
+        <param name="decimate_rel_tol" type="float" value="0.0" min="0.0" label="Decimation relative tolerance" help="Relative tolerance when decimating the size history. Larger values smooth out small changes in population sizes and speed up computation."/>
+        <param name="decimate_anc_size" type="float" optional="true" label="Most ancestral size when decimating" help="Most ancestral population size to use when decimating the size history."/>
+        <param name="high_accuracy_stationary" type="boolean" truevalue="--high_accuracy_stationary" falsevalue="" label="High accuracy stationary distribution" help="Use a high-accuracy stationary distribution (slower but more accurate)."/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="h5" label="${tool.name} lookup table on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="samplesize" value="10"/>
+            <param name="mu" value="1"/>
+            <param name="theta" value="40"/>
+            <conditional name="demography_source">
+                <param name="demography_source_selector" value="popsizes"/>
+                <param name="popsizes" value="10000"/>
+            </conditional>
+            <param name="approx" value="true"/>
+            <param name="moran_pop_size" value="12"/>
+            <output name="outfile" ftype="h5">
+                <assert_contents>
+                    <has_size value="85168" delta="1000"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+`pyrho make_table` precomputes a demography-specific two-locus likelihood
+lookup table (stored as an HDF5 file) that is required by the other pyrho
+commands (`hyperparam`, `optimize`, `compute_r2`). The table is built for a
+specific sample size, per-generation mutation rate, and demographic history.
+
+**Inputs**
+
+- **Sample size** — the maximum number of haplotypes for which the table will
+  be valid. It must be at least as large as the number of haplotypes in the
+  data used downstream.
+- **Per-generation mutation rate** — e.g. `1.25e-8`.
+- **Demographic history** — one of:
+  - Population sizes (comma-delimited) with optional epoch times (generations).
+  - An MSMC output file (`--msmc_file`).
+  - A smc++ CSV file (`--smcpp_file`).
+
+**Output**
+
+An HDF5 lookup table (datatype `h5`) containing the two-locus sampling
+distribution under the specified demography.
+
+**Notes**
+
+- Building large tables is memory-intensive. For sample sizes greater than
+  about 20, use `--approx`. A sample size of 210 with `--approx` requires
+  roughly 20 GB of RAM.
+- `--moran_pop_size` (N) is only used with `--approx` and should be about
+  25-50% larger than the sample size.
+- The first run triggers a numba JIT compilation (~30 s).
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

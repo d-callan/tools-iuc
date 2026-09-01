@@ -1,0 +1,94 @@
+<tool id="pyrho_hyperparam" name="pyrho hyperparam" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Simulation-based tuning of optimization hyperparameters</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pyrho hyperparam
+--tablefile '$tablefile'
+-n $samplesize
+-m $mu
+@DEMOGRAPHY@
+-bpen '$blockpenalty'
+-w '$windowsize'
+--metawindow $metawindow
+--overlap $overlap
+--num_sims $num_sims
+--ploidy $ploidy
+@THREADS@
+-o '$outfile'
+]]>
+    </command>
+    <inputs>
+        <param name="tablefile" type="data" format="h5" label="pyrho lookup table" help="The demography-specific lookup table produced by pyrho make_table."/>
+        <param name="samplesize" type="integer" min="2" label="Sample size (number of haplotypes)" help="The number of haplotypes to simulate. Must be no larger than the lookup table sample size."/>
+        <param name="mu" type="float" min="0.0" label="Per-generation mutation rate" help="The per-generation mutation rate (e.g. 1.25e-8)."/>
+        <expand macro="macro_demography"/>
+        <param name="blockpenalty" type="text" value="15,20,25,30,35,40,45,50" label="Block penalties to test" help="Comma-delimited list of block penalty values to evaluate."/>
+        <param name="windowsize" type="text" value="30,40,50,60,70,80,90" label="Window sizes to test" help="Comma-delimited list of window sizes to evaluate."/>
+        <param name="num_sims" type="integer" value="100" min="1" label="Number of simulations" help="Number of 1 Mb regions to simulate for each hyperparameter combination."/>
+        <param name="ploidy" type="select" label="Ploidy of the data">
+            <option value="1" selected="true">1 (phased haplotypes)</option>
+            <option value="2">2 (unphased genotypes)</option>
+        </param>
+        <expand macro="macro_common_optimize"/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="tabular" label="${tool.name} hyperparameter results on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="tablefile" value="lookup_table.h5" ftype="h5"/>
+            <param name="samplesize" value="10"/>
+            <param name="mu" value="1e-8"/>
+            <conditional name="demography_source">
+                <param name="demography_source_selector" value="popsizes"/>
+                <param name="popsizes" value="10000"/>
+            </conditional>
+            <param name="blockpenalty" value="50"/>
+            <param name="windowsize" value="50"/>
+            <param name="num_sims" value="2"/>
+            <output name="outfile" ftype="tabular">
+                <assert_contents>
+                    <has_text text="Block_Penalty"/>
+                    <has_text text="Window_Size"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+`pyrho hyperparam` simulates data under the specified demography and
+recombination model, infers recombination maps with `optimize` for each
+combination of `blockpenalty` and `windowsize`, and reports accuracy metrics
+for each combination. This helps you choose good hyperparameter values before
+running `pyrho optimize`.
+
+**Inputs**
+
+- **Lookup table** — the HDF5 output of `pyrho make_table`.
+- **Sample size** and **per-generation mutation rate** — used for simulation.
+- **Demographic history** — population sizes / MSMC / smc++ file, matching the
+  demography used to build the lookup table.
+- **Block penalties** and **window sizes** — comma-delimited lists of values
+  to evaluate.
+- **Number of simulations** — more simulations give more reliable accuracy
+  estimates but take longer.
+
+**Output**
+
+A tabular file with one row per (block penalty, window size) combination and
+columns for Pearson, log-Pearson, and Spearman correlations at 1 bp, 10 kb,
+and 100 kb scales, plus L2 and log-L2 norms.
+
+**Notes**
+
+- This step is optional. You can run `pyrho optimize` directly with the
+  default hyperparameters.
+- The lookup table sample size must be >= the requested sample size.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

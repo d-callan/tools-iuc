@@ -1,0 +1,76 @@
+<tool id="pyrho_compute_r2" name="pyrho compute_r2" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Compute theoretical quantiles/mean of the r^2 distribution</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pyrho compute_r2
+--tablefile '$tablefile'
+--samplesize $samplesize
+--MAFcut $MAFcut
+--quantiles '$quantiles'
+#if $compute_mean:
+    --compute_mean
+#end if
+-o '$outfile'
+]]>
+    </command>
+    <inputs>
+        <param name="tablefile" type="data" format="h5" label="pyrho lookup table" help="The demography-specific lookup table produced by pyrho make_table."/>
+        <param name="samplesize" type="integer" min="2" label="Sample size (number of haplotypes)" help="The number of haplotypes to compute the r^2 distribution for. Must be no larger than the lookup table sample size."/>
+        <param name="MAFcut" type="float" value="0.0" min="0.0" max="0.5" label="Minor allele frequency cutoff" help="Only pairs of sites where both sites have a minor allele frequency above this threshold are considered. Must be less than 0.5."/>
+        <param name="quantiles" type="text" value="0.5" label="Quantiles to compute" help="Comma-delimited list of quantiles (e.g. 0.25,0.5,0.75)."/>
+        <param name="compute_mean" type="boolean" truevalue="--compute_mean" falsevalue="" label="Compute the mean of r^2" help="Also compute the mean of the r^2 distribution."/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="tabular" label="${tool.name} r2 distribution on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="tablefile" value="lookup_table.h5" ftype="h5"/>
+            <param name="samplesize" value="4"/>
+            <param name="compute_mean" value="true"/>
+            <output name="outfile" ftype="tabular">
+                <assert_contents>
+                    <has_text text="r"/>
+                    <has_text text="mean"/>
+                    <has_text text="0.5"/>
+                    <has_n_lines n="192" delta="0"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+`pyrho compute_r2` computes the theoretical quantiles and/or mean of the
+distribution of the linkage disequilibrium measure r^2 from a lookup table.
+This can be used to check whether an inferred demography or recombination map
+fits the data well, since the distribution of r^2 depends heavily on the
+demographic history.
+
+**Inputs**
+
+- **Lookup table** — the HDF5 output of `pyrho make_table`.
+- **Sample size** — the number of haplotypes for which to compute the
+  distribution. Must be no larger than the lookup table sample size.
+- **MAF cutoff** — only pairs of sites where both sites have a minor allele
+  frequency above this threshold are considered.
+- **Quantiles** — comma-delimited list of quantiles to compute.
+- **Compute mean** — also compute the mean of the r^2 distribution.
+
+**Output**
+
+A tabular file with a `r` column (the recombination rate rho) and optional
+`mean` and quantile columns.
+
+**Notes**
+
+- The distribution of r^2 is very sensitive to low-frequency alleles, which
+  are also the most difficult to genotype accurately. Use `--MAFcut` to
+  condition on minor allele frequency.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
