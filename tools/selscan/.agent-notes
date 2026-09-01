@@ -57,3 +57,15 @@ Final state:
 - Test data tracked: selscan.ihs.out, selscan.ihs.out.100bins.norm, selscan.ihs.out.100bins.norm.100kb.windows, selscan.xpehh.out, selscan.map, selscan.vcf, selscan_ref.vcf, norm2.log.
 
 Note: selscan.ihs.out.100bins.norm and selscan.ihs.out.100bins.norm.100kb.windows contain only header lines (the ihs test data has too few SNPs per frequency bin to produce normalized rows). These files exist as tracked test data but are not directly asserted against — the norm tests generate their own outputs at runtime. They were kept from earlier rounds.
+
+## Feedback round 6
+
+## Cleanup round (maintainer: "clean up/remove unnecessary files")
+
+Removed debug/leftover artifacts not referenced by any test:
+- norm.log (root) — debug log
+- test-data/norm2.log — debug log
+- test-data/selscan.ihs.out.100bins.norm — header-only, not referenced (norm tests generate outputs at runtime)
+- test-data/selscan.ihs.out.100bins.norm.100kb.windows — header-only, not referenced
+
+Verified: selscan_norm 3 tests still pass, lint clean on both tools. Remaining test-data: selscan.ihs.out, selscan.xpehh.out, selscan.map, selscan.vcf, selscan_ref.vcf (all referenced by tests).
