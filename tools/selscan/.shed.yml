@@ -1,0 +1,15 @@
+name: selscan
+owner: iuc
+description: EHH-based haplotype scans for positive selection (iHS, XP-EHH, nSL, XP-nSL, iHH12) and score normalization
+categories:
+- Sequence Analysis
+- Variant Analysis
+homepage_url: https://github.com/szpiech/selscan
+long_description: |
+  selscan is a multithreaded C++ program that calculates EHH-based haplotype scans
+  for positive selection in genomes. It implements the iHS, XP-EHH, nSL, XP-nSL and
+  iHH12 statistics. It accepts phased haplotype data coded 0/1 in VCF format (with an
+  optional genetic map file) and outputs per-locus score files. The selscan norm
+  subcommand standardizes iHS/nSL/XP-EHH/XP-nSL scores and generates windowed summaries.
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/selscan
+type: unrestricted
