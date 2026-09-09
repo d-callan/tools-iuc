@@ -1,0 +1,115 @@
+<tool id="pyrho_optimize" name="pyrho optimize" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>Infer a fine-scale recombination map from genotype data</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+pyrho optimize
+--tablefile '$tablefile'
+#if $input_source.input_source_selector == 'vcf':
+    --vcffile '$input_source.vcffile'
+    #if str($input_source.vcfpass):
+        --vcfpass '$input_source.vcfpass'
+    #end if
+#elif $input_source.input_source_selector == 'fasta':
+    --fastafile '$input_source.fastafile'
+#else
+    --sitesfile '$input_source.sitesfile'
+    --locsfile '$input_source.locsfile'
+#end if
+--ploidy $ploidy
+-bpen $blockpenalty
+-w $windowsize
+--metawindow $metawindow
+--overlap $overlap
+#if $fast_missing:
+    --fast_missing
+#end if
+@THREADS@
+-o '$outfile'
+]]>
+    </command>
+    <inputs>
+        <param name="tablefile" type="data" format="h5" label="pyrho lookup table" help="The demography-specific lookup table produced by pyrho make_table."/>
+        <conditional name="input_source">
+            <param name="input_source_selector" type="select" label="Genotype/haplotype data source">
+                <option value="vcf">VCF / BCF file</option>
+                <option value="fasta">FASTA haplotypes</option>
+                <option value="ldhat">LDhat sites + locs files</option>
+            </param>
+            <when value="vcf">
+                <param name="vcffile" type="data" format="vcf,vcf_bgzip,bcf" label="VCF/BCF file"/>
+                <param name="vcfpass" type="text" optional="true" label="VCF FILTER value to require" help="Require that the FILTER column of the VCF matches this value to include a SNP in the analysis. Default is to include all SNPs."/>
+            </when>
+            <when value="fasta">
+                <param name="fastafile" type="data" format="fasta" label="FASTA haplotypes"/>
+            </when>
+            <when value="ldhat">
+                <param name="sitesfile" type="data" format="tabular" label="LDhat sites file"/>
+                <param name="locsfile" type="data" format="tabular" label="LDhat locs file"/>
+            </when>
+        </conditional>
+        <param name="ploidy" type="select" label="Ploidy of the data">
+            <option value="1" selected="true">1 (phased haplotypes)</option>
+            <option value="2">2 (unphased genotypes)</option>
+        </param>
+        <param name="blockpenalty" type="float" value="40.0" min="0.0" label="Block penalty" help="Penalty to ensure smoothness of the recombination map. Larger penalties result in smoother maps."/>
+        <param name="windowsize" type="integer" value="50" min="1" label="Window size" help="Maximum distance (in number of SNPs) to consider between pairs of SNPs."/>
+        <expand macro="macro_common_optimize"/>
+        <param name="fast_missing" type="boolean" truevalue="--fast_missing" falsevalue="" label="Use fast missingness approximation" help="Cache some additional likelihoods and, for each pair of loci, throw away individuals missing at exactly one locus. Substantially faster for data with high missingness at a minimal loss of accuracy, but this is an untested feature."/>
+    </inputs>
+    <outputs>
+        <data name="outfile" format="tabular" label="${tool.name} recombination map on ${on_string}"/>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="tablefile" value="lookup_table.h5" ftype="h5"/>
+            <conditional name="input_source">
+                <param name="input_source_selector" value="vcf"/>
+                <param name="vcffile" value="short.vcf.gz" ftype="vcf"/>
+            </conditional>
+            <param name="ploidy" value="2"/>
+            <output name="outfile" ftype="tabular">
+                <assert_contents>
+                    <has_n_lines n="8" delta="0"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+`pyrho optimize` infers a fine-scale, per-generation recombination map from
+phased or unphased genotype data using composite likelihoods and fused-LASSO
+penalized optimization. It requires a demography-specific lookup table
+produced by `pyrho make_table`.
+
+**Inputs**
+
+- **Lookup table** — the HDF5 output of `pyrho make_table`. Its sample size
+  must be at least as large as the number of haplotypes in the data.
+- **Genotype/haplotype data** — one of:
+  - A VCF / bgzipped VCF / BCF file.
+  - A FASTA file of haplotypes.
+  - LDhat `sites` and `locs` files.
+- **Ploidy** — `1` for phased haplotypes, `2` for unphased genotypes.
+
+**Output**
+
+A 3-column tabular file: `start`, `end` (non-inclusive), and `r` (the
+per-base, per-generation recombination rate) for each interval between
+adjacent SNPs.
+
+**Notes**
+
+- The lookup table sample size must be >= the number of haplotypes in the
+  data, otherwise an error is raised.
+- `blockpenalty` controls smoothness: larger values give smoother maps.
+  `windowsize` is the maximum number of SNPs between pairs considered.
+- `--fast_missing` is an untested upstream feature; use with caution.
+- The first run triggers a numba JIT compilation (~30 s).
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
