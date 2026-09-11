@@ -1,0 +1,15 @@
+# Agent Notes
+
+## Feedback round 1
+
+## Feedback round (no changes)
+
+No actionable feedback was provided this round — all CI checks were reported as "skipped" and both planemo tests passed (2/2). planemo lint is clean (no WARN/ERROR, only INFO/CHECK). The bio.tools xref `hmmibd` was verified as a valid registry entry.
+
+Reviewed the tool against IUC conventions and confirmed it already conforms: lowercase tool id, `@TOOL_VERSION@+galaxy@VERSION_SUFFIX@` version, `detect_errors="aggressive"` (no stdio), markdown help, DOI citation, distinct output labels, `expect_num_outputs` on all tests, `mv` for outputs, no user-facing threading params, Cheetah only in `<command>`. No file changes were made this round.
+
+## Feedback round 2
+
+## Feedback round 2
+
+Fixed `.shed.yml`: changed `owner: d-callan` to `owner: iuc` per IUC convention for tools in the tools-iuc collection.
