@@ -24,3 +24,13 @@ repo: d-callan/tools-iuc
 agent_notes: true
 integrated_review_mode: on-validation-pass
 max_review_fix_rounds: 1
+
+# Scheduled autoupdate flow (gxy-autoupdate.yml): weekly conda version scan,
+# one PR per outdated tool. Disable by setting enabled: false.
+autoupdate:
+  enabled: true
+  channels: [bioconda, conda-forge]
+  # Tool dirs to never auto-update, or a file listing them one per line:
+  # skip: [my_tool]
+  # skip_file: autoupdate-skip.txt
+  max_tools_per_run: 10
