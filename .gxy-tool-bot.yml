@@ -33,4 +33,4 @@ autoupdate:
   # Tool dirs to never auto-update, or a file listing them one per line:
   # skip: [my_tool]
   # skip_file: autoupdate-skip.txt
-  max_tools_per_run: 10
+  max_tools_per_run: 2
