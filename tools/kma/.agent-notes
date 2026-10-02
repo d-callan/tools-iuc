@@ -1,0 +1,49 @@
+# Agent Notes
+
+## Update round 1
+
+## kma update round
+
+**No version bump was needed.** `@TOOL_VERSION@` was already `1.6.17`, which is the newest bioconda build and matches upstream `version.h`. The requester's "we don't have the latest" was likely based on an older checkout. So this is a wrapper-only change: `@VERSION_SUFFIX@` 0 -> 1.
+
+**Scope narrowed per maintainer answer** ("focus on high priority only"). Implemented the high-value subset from the plan rather than the full ~50-flag catch-up:
+- `-mem_mode`, `-reassign`, `-proxi`, `-apm` (template mapping section)
+- presets `-ont` / `-ill` / `-asm` (mutually exclusive with individual overrides; documented, not enforced)
+- `-sam`, `-vcf`, `-qc` outputs
+- citation `10.1093/nargab/lqaf116` (2025 NAR G&B proximity-scoring paper, which KMA 1.6.17 itself prints via `kma -c`)
+- fixed `-k` max 32 -> 31 (verified: `kma -k 32` exits 1 with "Invalid kmersize parsed, max size is 31")
+- relabelled `-a` to "Output all template mappings" (matches `kma -h`)
+
+**Deliberately NOT added** (documented in plan, still valid): `-spltDB`/`-status` (pipe-to-bash / fork semantics), `-tmp` (Galaxy manages temp dirs), `-nc`/`-na`/`-nf` (would suppress declared outputs), and the long tail of alignment/trimming tuning flags (`-mrs`, `-mrc`, `-ml`, `-md`, `-mct`, `-bc`, `-Npenalty`, `-transition`, `-transversion`, `-localopen`, `-3p`, `-mi`, `-eq`, `-xl`, `-ts`, `-mf`, `-shm`, `-mmap`, `-ef`, `-Mt1`, `-ss`, `-ConClave`, `-lc`, `-ca`, `-and`, `-oa`, `-bcNano`, `-bcg`).
+
+**Verified against kma 1.6.17 in conda** (all numbers used in the new test asserts):
+- `-sam` writes SAM to **stdout** (not a file), so the wrapper redirects `> output.sam`. 551 lines, 5 `@SQ` records, 544 alignment records.
+- `-vcf` writes `output.vcf.gz` (plain gzip, not bgzip) -> wrapper gunzips to `output.vcf`. 1144 lines.
+- `-qc` writes `output.json`, 25 lines, keys `"Fragment Count": 544`, `"N50": 91`.
+- `-mem_mode -reassign -proxi 0.5 -apm p` -> res 2 lines, aln 85, fsa 1 record, frag 518 lines.
+- `-ont` preset -> res 2 lines, aln 85, fsa 1 record, frag 500 lines, best hit `b0842_3`.
+- `-proxi` requires a value (bare `-proxi` errors); out-of-range (>1.0) errors. Wrapper only emits it when != 1.0.
+- The pre-built 1.4-era test index loads fine under 1.6.17 — no test-data regeneration needed.
+
+**Note:** `detect_errors` changed from `exit_code` to `aggressive` per IUC convention. KMA's log goes to stderr and is clean; SAM (stdout) contains no error keywords. Verified via planemo test.
+
+## Update round 2
+
+## Final state — all 6 tests pass, lint clean
+
+**Test suite (6 tests):** the 3 original tests are unchanged and still pass (new params default to upstream defaults and are only emitted when set). Added 3 tests:
+- `mem_mode` + `reassign` + `proxi 0.5` + `apm p` -> res 2 lines, aln 85, fsa 1 record, frag 518
+- `sam` + `vcf` + `qc` -> SAM 551 lines, VCF 1144 lines, JSON 25 lines
+- `-ont` preset -> res 2 lines, aln 85, fsa 1 record, frag 500, best hit `b0842_3`
+
+**Gotchas hit while writing tests (worth remembering):**
+1. `-sam` writes to **stdout**, not a file. The wrapper redirects `> output.sam`. Because of this the redirect must come *after* `-o output` and the `gunzip` chain must be `&&`-joined after it.
+2. `has_line_matching` with a literal tab in the regex did **not** match the SAM header even though the tab was present in the output. Switched to `has_text` substring assertions (`@HD`, `VN:1.6`, `SN:b0842_1`, `LN:1233`) which are robust. The pre-existing `-matrix` test uses `&#009;` in its regex and works, so the difference is likely how the tab was embedded in my expression — `has_text` avoids the issue entirely.
+3. `-vcf` emits `output.vcf.gz` (plain gzip, not bgzip) -> wrapper gunzips to `output.vcf`.
+4. `-proxi` requires a value (bare `-proxi` errors) and rejects values outside [-1, 1]. Wrapper only emits it when != 1.0, so the default path is byte-identical to before.
+
+**Lint fixes applied:** removed redundant `name` attributes where `argument` already implies the name (`mem_mode`, `reassign`, `proxi`, `sam`, `vcf`, `qc`), and used section-qualified param names in tests (`settings|mem_mode` etc. resolved once the params existed).
+
+**`.shed.yml` unchanged** — `Next Gen Mappers` is a valid Tool Shed category (confirmed against the live category list), so no shed lint warning.
+
+**No test-data changes needed** — the 1.4-era prebuilt index loads fine under 1.6.17.
