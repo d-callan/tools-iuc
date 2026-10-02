@@ -1,18 +1,19 @@
 <macros>
     <token name="@TOOL_VERSION@">1.6.17</token>
-    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@VERSION_SUFFIX@">1</token>
     <token name="@PROFILE@">23.0</token>
     <token name="@INTYPES@">fastq,fastq.gz,fastqsanger,fastqsanger.gz</token>
     <xml name="kma_index">
         <param label="Select a KMA index" name="kma_index" type="select">
             <options from_data_table="kma_index">
-                <validator message="No KMA index available" type="no_options" />
+                <validator message="No KMA index available" type="no_options"/>
             </options>
         </param>
     </xml>
     <xml name="citations">
         <citations>
             <citation type="doi">10.1186/s12859-018-2336-6</citation>
+            <citation type="doi">10.1093/nargab/lqaf116</citation>
         </citations>
     </xml>
 </macros>
