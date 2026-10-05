@@ -5,7 +5,7 @@
     </macros>
     <expand macro="requirements"/>
     <version_command>echo @TOOL_VERSION@</version_command>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
         python '$__tool_directory__/alphagenome_ism_scanner.py'
             --input '$input_bed'
             --output '$output_tsv'
@@ -44,7 +44,6 @@
             <option value="SPLICE_JUNCTIONS">Splice junctions</option>
             <option value="CONTACT_MAPS">Contact maps</option>
             <option value="POLYADENYLATION">Polyadenylation</option>
-            <validator type="no_options" message="Select at least one scorer"/>
         </param>
         <expand macro="sequence_length_param"/>
         <param name="max_regions" type="integer" value="10" min="1" max="100" label="Maximum regions to scan" help="Each region generates 3 x width mutations; start small"/>
@@ -64,7 +63,7 @@
             <param name="max_regions" value="1"/>
             <param name="max_region_width" value="10"/>
             <param name="test_fixture" value="test-data/fixture_ism_scanner.json"/>
-            <output name="output_tsv">
+            <output name="output_tsv" ftype="tabular">
                 <assert_contents>
                     <has_text text="region"/>
                     <has_text text="raw_score"/>
@@ -89,10 +88,10 @@
             <param name="max_regions" value="1"/>
             <param name="max_region_width" value="10"/>
             <param name="mock_ism_results" value="test-data/mock_ism_multi_region.json"/>
-            <output name="output_tsv" file="mock_ism_expected.tsv" compare="diff"/>
+            <output name="output_tsv" ftype="tabular" file="mock_ism_expected.tsv" compare="diff"/>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 **AlphaGenome ISM Scanner**
 
 Performs in-silico saturation mutagenesis (ISM) using AlphaGenome's

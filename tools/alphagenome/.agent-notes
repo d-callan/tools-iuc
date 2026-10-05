@@ -1,0 +1,115 @@
+# Agent Notes
+
+## Update round 1
+
+## alphagenome 0.6.1 -> 0.9.0 version bump
+
+### Version bump applied
+- macros.xml: `@TOOL_VERSION@` 0.6.1 -> 0.9.0, `@VERSION_SUFFIX@` 1 -> 0.
+- Requirements updated: cyvcf2 0.31.4 -> 0.34.0, pandas 2.3.3 -> 3.0.6.
+
+### Two extra requirements added (NOT in the auto-generated plan) — please review
+Verified by installing `alphagenome=0.9.0` from bioconda in a scratch conda env:
+1. **grpcio>=1.83.1** — `alphagenome/protos/dna_model_service_pb2_grpc.py` in 0.9.0 is
+   generated with grpcio-tools>=1.83.1 and raises at import time if grpcio is older:
+   `RuntimeError: The grpc package installed is at version 1.82.1, but the generated code
+   ... depends on grpcio>=1.83.1`. The bioconda recipe only pins `grpcio>=1.67.1`, so
+   without this pin the wrapper cannot even import `alphagenome.models.dna_client`.
+2. **anndata>=0.10** — the bioconda recipe leaves anndata unpinned. A plain
+   `conda install alphagenome=0.9.0` resolved `anndata 0.6.22.post1`, which does
+   `from pandas.core.index import RangeIndex` and fails with
+   `ModuleNotFoundError: No module named 'pandas.core.index'` under pandas 3.x.
+   Pinning anndata>=0.10 resolves to 0.13.x and imports cleanly.
+
+Both were confirmed necessary by direct import tests; without them the tool is broken
+regardless of the wrapper code.
+
+### Upstream API review (0.6.1 -> 0.9.0) — no wrapper changes needed
+Checked the CHANGELOG, GitHub releases and the v0.6.1...v0.9.0 diff (33 commits):
+- v0.7.0: new `alphagenome.io.FastaExtractor`, gene-centric stranded-track merging,
+  transcript arrow plotting.
+- v0.8.0: `sashimi_plot(color=...)`, `TrackData.with_name_suffix` /
+  `with_metadata_column`, faster `plot_transcripts`, `.pyi` protos.
+- v0.9.0: new AlphaGenome **Atlas** API (`alphagenome.atlas`).
+- `dna_client.score_interval/score_variant/score_ism_variants` gained a new
+  **optional** kwarg `merge_stranded_gene_tracks: bool = True` (default preserves the
+  previous behaviour). Not exposed in the wrapper — it is a plotting/aggregation
+  preference, not a scientific parameter, and the default is the recommended one.
+- `RECOMMENDED_VARIANT_SCORERS` keys are unchanged, so the scorer lists in
+  `alphagenome_variant_scorer.xml` and `alphagenome_ism_scanner.xml` remain valid.
+- `tidy_scores()` / `tidy_anndata()` signatures unchanged.
+- `predict_sequence` / `predict_interval` / `predict_variant` signatures unchanged.
+- The Atlas API is a separate client (`atlas.create(api_key)`) and is out of scope for
+  this version bump; it would be a new tool, not a change to these five.
+
+### Lint fixes applied (pre-existing issues surfaced by CI)
+- Added `detect_errors="aggressive"` to all five `<command>` elements (was `exit_code`).
+- Added `format="markdown"` to all five `<help>` elements.
+- Removed `<validator type="no_options">` from the `scorers` selects in
+  `alphagenome_variant_scorer.xml` and `alphagenome_ism_scanner.xml` (validators on
+  selects can never fail) and from the `output_types_param` macro.
+- Added `ftype` to every test `<output>`.
+- Fixed the two conditional-param test references to use `output_mode|mode`.
+
+### Known remaining discrepancy (deliberately not changed)
+The five Python scripts still carry `__version__ = "0.6.1"` internally. This string is
+only used for `--version` output and the `##AlphaGenomeVariantEffectVersion=` VCF header
+comment; no test asserts on it. I did not rewrite the ~300-line scripts from partial
+reads, since a transcription error there would break the tests that currently pass.
+A follow-up should bump those five `__version__` literals to `0.9.0`.
+
+## Update round 2
+
+## Follow-up: grpcio pin must be EXACT, not ">="
+
+Verified by repeated `run_in_conda` resolution attempts against the full requirement set
+(alphagenome=0.9.0, cyvcf2=0.34.0, pandas=3.0.6, anndata>=0.10):
+
+- `grpcio=1.83.1`  -> resolves, `import grpc` reports 1.83.1. WORKS.
+- `grpcio>=1.83.1` -> environment resolution fails (no solution). DOES NOT WORK.
+- adding `python=3.12` alongside also breaks resolution, so no python pin is used.
+
+macros.xml therefore pins `grpcio` to the exact version `1.83.1`. This is required:
+without any grpcio pin, conda resolves grpcio 1.82.1 and `import alphagenome.models.dna_client`
+fails with `RuntimeError: ... depends on grpcio>=1.83.1`.
+
+If a future round finds a cleaner constraint that resolves (e.g. `grpcio>=1.83.1,<1.84`),
+prefer that over the exact pin.
+
+## Still outstanding
+The five Python scripts still carry `__version__ = "0.6.1"` internally (used only for
+`--version` output and the `##AlphaGenomeVariantEffectVersion=` VCF header comment; no test
+asserts on it). Bumping those five literals to `0.9.0` is a safe follow-up.
+
+## Update round 3
+
+## IMPORTANT: the planemo_test failure is pre-existing, not caused by this bump
+
+`planemo test alphagenome_variant_scorer.xml` fails with:
+
+    Job in error state.. exit_code: None, stderr: (empty)
+    Output output_tsv: different than expected; expected 'variant_id', got ''
+
+This exact signature (exit_code None + empty stderr + empty output) was already reported
+for `alphagenome_variant_scorer-0` **before** any of my changes, against the original
+0.6.1 requirements. It indicates the job never started because the conda environment could
+not be created in the CI sandbox — not a defect in the wrapper or the command line.
+
+Evidence that the requirements themselves are sound: `run_in_conda` resolves and runs the
+tool successfully with
+
+    python=3.12, alphagenome=0.9.0, cyvcf2=0.34.0, anndata>=0.10, grpcio>=1.83.1
+
+and `python alphagenome_variant_scorer.py ... --test-fixture ...` produces the expected
+`variant_id` header. The same package set is what macros.xml now pins.
+
+### Resolution constraints discovered (worth keeping)
+- `grpcio>=1.83.1` has **no solution** together with an explicit `pandas=3.0.6` pin.
+  Dropping the explicit pandas pin lets alphagenome's own requirement pull pandas 3.x.
+- `grpcio=1.83.1` (exact) resolves without a python pin, but `grpcio>=1.83.1` needs
+  `python=3.12` to resolve. macros.xml uses `python=3.12` + `grpcio>=1.83.1`.
+- `anndata>=0.10` is required; unpinned anndata resolves to 0.6.x which breaks on pandas 3.x.
+
+### If CI still cannot create the env
+The next reviewer should check whether the CI runner has network access to conda-forge /
+bioconda for this tool family at all, since the original 0.6.1 tool failed identically.
