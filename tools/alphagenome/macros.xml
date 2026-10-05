@@ -1,12 +1,23 @@
 <macros>
-    <token name="@TOOL_VERSION@">0.6.1</token>
-    <token name="@VERSION_SUFFIX@">1</token>
+    <token name="@TOOL_VERSION@">0.9.0</token>
+    <token name="@VERSION_SUFFIX@">0</token>
     <token name="@PROFILE@">25.0</token>
     <xml name="requirements">
         <requirements>
             <requirement type="package" version="@TOOL_VERSION@">alphagenome</requirement>
-            <requirement type="package" version="0.31.4">cyvcf2</requirement>
-            <requirement type="package" version="2.3.3">pandas</requirement>
+            <requirement type="package" version="0.34.0">cyvcf2</requirement>
+            <!-- alphagenome 0.9.0 ships gRPC stubs generated with grpcio-tools>=1.83.1 and
+                 raises at import time on older grpcio:
+                   RuntimeError: The grpc package installed is at version 1.82.1, but the
+                   generated code ... depends on grpcio>=1.83.1
+                 The bioconda recipe only pins grpcio>=1.67.1, so pin it here. An exact pin
+                 is used because "grpcio>=1.83.1" has no solution alongside the rest of the
+                 dependency set. -->
+            <requirement type="package" version="1.83.1">grpcio</requirement>
+            <!-- The bioconda recipe leaves anndata unpinned; conda can otherwise resolve an
+                 ancient anndata (0.6.x) that is incompatible with pandas 3.x
+                 (ModuleNotFoundError: No module named 'pandas.core.index'). -->
+            <requirement type="package" version="&gt;=0.10">anndata</requirement>
             <credentials name="alphagenome" version="1.0" label="AlphaGenome API" description="API key from Google DeepMind AlphaGenome">
                 <secret name="api_key" inject_as_env="ALPHAGENOME_API_KEY" label="API Key" description="Your AlphaGenome API key"/>
             </credentials>
@@ -36,7 +47,6 @@
             <option value="CHIP_TF">ChIP-seq TF</option>
             <option value="SPLICE_SITES">Splice sites</option>
             <option value="PROCAP">PRO-cap</option>
-            <validator type="no_options" message="Select at least one output type"/>
         </param>
     </xml>
     <xml name="ontology_terms_param">
