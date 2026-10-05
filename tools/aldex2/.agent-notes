@@ -1,0 +1,45 @@
+# Agent Notes
+
+## Update round 1
+
+ALDEx2 1.26.0 -> 1.42.0 version bump.
+
+Upstream research (NEWS from ggloor/ALDEx_bioc devel branch + Bioconductor):
+- v1.33: aldex.clr gained a `gamma` parameter (scale modelling); new aldex.makeScaleMatrix; **all p-values are now posterior p-values with consistent sign**.
+- v1.39: fixed bug in aldex.makeScaleMatrix; gamma can now be a function.
+- No changes to the signatures of the functions the wrapper calls: aldex(), aldex.clr(), aldex.ttest(), aldex.kw(), aldex.effect(), aldex.corr(), aldex.plot(), aldex.plotFeature(), aldex.expectedDistance() are all unchanged (verified by installing bioconductor-aldex2=1.42.0 in conda and printing args()).
+- The only wrapper-visible effect is the v1.33 p-value change, which alters the *content/size* of tabular outputs -> test-data size expectations must be refreshed.
+
+Decision: keep the wrapper scoped to the version bump. The new `gamma` scale-modelling parameter is a substantial new feature (needs a scale matrix / function input) and is not required for the existing analyses; adding it would be a feature addition beyond a version bump, so it is intentionally NOT exposed. No CLI flags were renamed/removed, so no command changes needed.
+
+Pre-existing quirk (not introduced here): aldex2.R references opt$cont_var in the aldex_corr branch but no such option is defined; optparse returns NULL for missing list elements so the branch still works via group_nums/num_cols_in_groups. Left as-is to keep the diff scoped.
+
+## Update round 2
+
+Test-data size expectations were refreshed by running the wrapper against bioconductor-aldex2=1.42.0 in conda (128 MC samples, reads.tabular, groups NS/S 7+7). New observed sizes (old -> new):
+- T1 aldex default: 39906 -> ~39350 (run-to-run 39317-39367)
+- T2 denom=zero: 39908 -> ~39430
+- T3 effect=false+sample_summary+iterate: 14595 -> ~13870
+- T4 aldex_test=kw: 14615 -> ~14610
+- T5 aldex_corr: 33232 -> ~33250
+- T6 aldex_effect: 25268 -> ~25285
+- T7 expected_distance png: 70183 -> ~69360
+- T8 aldex_kw: 14623 -> ~14610
+- T9 aldex_plot png: 19064 -> ~18870
+- T10 plot_feature png: 30772 -> ~31980
+- T11 aldex_ttest: 14596 -> ~14020 (run-to-run 13978-14069)
+- T12 ttest paired+hist: 13822 -> ~13390; PDF 7331 -> ~5870
+Deltas widened to 300 (tabular) / 1000-4000 (images) to absorb Monte-Carlo run-to-run variance.
+
+Lint fixes applied while bumping: added detect_errors="aggressive" (was exit_code), added format="markdown" to <help>, dropped redundant optional="true" on xlab/ylab (value="" default already makes them optional), and changed the aldex_ttest paired_test param from argument="--paired_test" to name="paired_test" — the wrapper needs the literal strings "true"/"false" as the flag VALUE, so it must not be auto-emitted as a bare boolean flag; the command template already passes --paired_test '$...paired_test' explicitly.
+
+Note: planemo_test times out at the 300s tool limit because 12 tests each run 128 Monte Carlo instances; sizes were validated manually via run_in_conda instead.
+
+## Update round 3
+
+Feedback round fixes:
+1. CRITICAL command bug: the aldex_ttest hist_plot branch had `&& mv ...` on its own line, which renders as a bash syntax error. Fixed by putting the `&&` on the same logical line as the preceding --output argument (verified with `bash -n` for both the true and false branches).
+2. aldex2.R: `aldex.effect(aldex_clr_obj, include_sample_summary)` passed the value positionally into `verbose`; changed to `include.sample.summary = include_sample_summary`.
+3. Help text: rewrote the garbled `aldex` bullet (it had been copy/pasted from the aldex.corr description).
+4. Strengthened asserts: tabular outputs now also assert has_n_lines (201) and has_n_columns; image outputs now assert has_image_width/height (480x480) and has_image_mean_intensity ranges in addition to has_size. Note has_image_std_intensity is NOT a valid Galaxy assertion (lint rejects it) — used has_image_mean_intensity instead.
+5. paired_test/hist_plot are selects (not booleans) because the wrapper needs the literal "true"/"false" strings as flag values; a boolean would be emitted as a bare flag and the validator also rejects truevalue="true".

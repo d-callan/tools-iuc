@@ -1,11 +1,11 @@
 <tool id="aldex2" name="ALDEx2" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
-  <description>differential abundance analysis</description>
+    <description>differential abundance analysis</description>
     <macros>
         <import>macros.xml</import>
     </macros>
     <expand macro="biotools"/>
     <expand macro="requirements"/>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
 ## Enable building the conditions_vector.
 #set group_names = []
 #set num_cols = []
@@ -81,10 +81,9 @@ Rscript '${__tool_directory__}/aldex2.R'
 #else if str($analysis_type_cond.analysis_type) == 'aldex_plot_feature':
     --output '$output_aldex_plot_feature'
 #else if str($analysis_type_cond.analysis_type) == 'aldex_ttest':
-    --output '$output_aldex_ttest'
-    #if str($analysis_type_cond.hist_plot) == 'true':
-        && mv 'Rplots.pdf' '$output_aldex_ttest_plot'
-    #end if
+    ## NOTE: the '&&' must stay on the same logical line as the preceding --output argument,
+    ## otherwise the rendered shell script starts a line with '&&' and fails to parse.
+    --output '$output_aldex_ttest'#if str($analysis_type_cond.hist_plot) == 'true': && mv 'Rplots.pdf' '$output_aldex_ttest_plot'#end if
 #end if
     ]]></command>
     <inputs>
@@ -148,10 +147,10 @@ Rscript '${__tool_directory__}/aldex2.R'
                 </param>
                 <param name="cutoff_pval" type="float" value="0.1" min="0" label="Benjamini-Hochberg fdr cutoff"/>
                 <param name="cutoff_effect" type="integer" value="1" min="0" label="Effect size cutoff for plotting"/>
-                <param name="xlab" type="text" value="" optional="true" label="x-label for the plot">
+                <param name="xlab" type="text" value="" label="x-label for the plot">
                     <expand macro="sanitize_query" validinitial="string.ascii_letters,string.punctuation"/>
                 </param>
-                <param name="ylab" type="text" value="" optional="true" label="y-label for the plot">
+                <param name="ylab" type="text" value="" label="y-label for the plot">
                     <expand macro="sanitize_query" validinitial="string.ascii_letters,string.punctuation"/>
                 </param>
             </when>
@@ -161,8 +160,13 @@ Rscript '${__tool_directory__}/aldex2.R'
                 </param>
             </when>
             <when value="aldex_ttest">
-                <param argument="--paired_test" type="boolean" truevalue="true" falsevalue="false" checked="false" label="Calculate effect size for paired samples?"/>
-                <param argument="--hist_plot" type="select" label="Plot a histogram of p-values for the first Dirichlet Monte Carlo instance?">
+                <!-- The wrapper script expects the literal strings "true"/"false" as the flag VALUE,
+                     so these are selects rather than booleans (a boolean would be emitted as a bare flag). -->
+                <param name="paired_test" type="select" label="Calculate effect size for paired samples?">
+                    <option value="false" selected="true">No</option>
+                    <option value="true">Yes</option>
+                </param>
+                <param name="hist_plot" type="select" label="Plot a histogram of p-values for the first Dirichlet Monte Carlo instance?">
                     <option value="false" selected="true">No</option>
                     <option value="true">Yes</option>
                 </param>
@@ -212,7 +216,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex" ftype="tabular">
                 <assert_contents>
                     <has_text text="rab.all"/>
-                    <has_size value="39906" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="11"/>
+                    <has_size value="39350" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -230,7 +236,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex" ftype="tabular">
                 <assert_contents>
                     <has_text text="rab.all"/>
-                    <has_size value="39908" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="11"/>
+                    <has_size value="39430" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -252,7 +260,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex" ftype="tabular">
                 <assert_contents>
                     <has_text text="we.ep"/>
-                    <has_size value="14595" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="4"/>
+                    <has_size value="13870" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -272,7 +282,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex" ftype="tabular">
                 <assert_contents>
                     <has_text text="kw.ep"/>
-                    <has_size value="14615" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="4"/>
+                    <has_size value="14610" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -300,7 +312,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex_corr" ftype="tabular">
                 <assert_contents>
                     <has_text text="pearson.ecor"/>
-                    <has_size value="33232" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="9"/>
+                    <has_size value="33250" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -320,7 +334,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex_effect" ftype="tabular">
                 <assert_contents>
                     <has_text text="rab.all"/>
-                    <has_size value="25268" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="7"/>
+                    <has_size value="25285" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -339,7 +355,10 @@ Rscript '${__tool_directory__}/aldex2.R'
             </conditional>
             <output name="output_aldex_expected_distance" ftype="png">
                 <assert_contents>
-                    <has_size value="70183" delta="4000"/>
+                    <has_image_width width="480"/>
+                    <has_image_height height="480"/>
+                    <has_image_mean_intensity min="0.80" max="0.92"/>
+                    <has_size value="71800" delta="2000"/>
                 </assert_contents>
             </output>
         </test>
@@ -359,7 +378,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex_kw" ftype="tabular">
                 <assert_contents>
                     <has_text text="kw.ep"/>
-                    <has_size value="14623" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="4"/>
+                    <has_size value="14610" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -378,7 +399,10 @@ Rscript '${__tool_directory__}/aldex2.R'
             </conditional>
             <output name="output_aldex_plot" ftype="png">
                 <assert_contents>
-                    <has_size value="19064" delta="500"/>
+                    <has_image_width width="480"/>
+                    <has_image_height height="480"/>
+                    <has_image_mean_intensity min="0.97" max="1.0"/>
+                    <has_size value="18700" delta="600"/>
                 </assert_contents>
             </output>
         </test>
@@ -398,7 +422,10 @@ Rscript '${__tool_directory__}/aldex2.R'
             </conditional>
             <output name="output_aldex_plot_feature" ftype="png">
                 <assert_contents>
-                    <has_size value="30772" delta="2000"/>
+                    <has_image_width width="480"/>
+                    <has_image_height height="480"/>
+                    <has_image_mean_intensity min="0.92" max="0.99"/>
+                    <has_size value="32170" delta="1500"/>
                 </assert_contents>
             </output>
         </test>
@@ -418,7 +445,9 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex_ttest" ftype="tabular">
                 <assert_contents>
                     <has_text text="we.ep"/>
-                    <has_size value="14596" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="4"/>
+                    <has_size value="14020" delta="300"/>
                 </assert_contents>
             </output>
         </test>
@@ -440,18 +469,20 @@ Rscript '${__tool_directory__}/aldex2.R'
             <output name="output_aldex_ttest" ftype="tabular">
                 <assert_contents>
                     <has_text text="we.ep"/>
-                    <has_size value="13822" delta="100"/>
+                    <has_n_lines n="201"/>
+                    <has_n_columns n="4"/>
+                    <has_size value="13390" delta="300"/>
                 </assert_contents>
             </output>
             <output name="output_aldex_ttest_plot" ftype="pdf">
                 <assert_contents>
                     <has_text text="%PDF"/>
-                    <has_size value="7331" delta="100"/>
+                    <has_size value="5870" delta="500"/>
                 </assert_contents>
             </output>
         </test>
     </tests>
-    <help>
+    <help format="markdown"><![CDATA[
 **What it does**
 
 Performs a differential abundance analysis for the comparison of two or more conditions (e.g., single-organism
@@ -468,9 +499,9 @@ multi-sample (glm, Kruskal-Wallace) tests.  The tool also estimates effect size 
   * **Select features to retain as the denominator for the Geometric Mean calculation** - indicates which features to retain as the denominator for the Geometric Mean calculation. 
   * **Select the analysis to be performed**
 
-    * **Compute an ALDEx2 object (aldex)** - performs log-ratio transformation and statistical testing. Specifically, this function: (a) generates Monte Carlo samples of the Dirichlet distribution for each sample, (b) converts each instance using a log-ratio transform, then (c) retcalculates the expected values for the correlation between each feature and a contin- uous variable, using data returned returned by aldex.clr and a vector of the continuous variable. Returns results of Pearson, Spearman and Kendall tests.urns test results for two sample (Welch’s t, Wilcoxon) or multi-sample (glm, Kruskal-Wallace) tests. This function also estimates effect size for two sample analyses.
+    * **Compute an ALDEx2 object (aldex)** - performs log-ratio transformation and statistical testing. Specifically, this function: (a) generates Monte Carlo samples of the Dirichlet distribution for each sample, (b) converts each instance using a log-ratio transform, then (c) returns test results for two sample (Welch’s t, Wilcoxon) or multi-sample (glm, Kruskal-Wallace) tests. This function also estimates effect size for two sample analyses.
 
-      * **Select the tests to be performed** - select the tests to be performed when crearing the ALDEx2 object.
+      * **Select the tests to be performed** - select the tests to be performed when creating the ALDEx2 object.
       * **Calculate abundances and effect sizes** - applies only if the selected test is Welch’s t and Wilcox tests, or if tests are performed iteratively.
       * **Include median clr values for each sample** - specify whether to include median clr values for each sample (applies only if abundances and effect sizes are calculated).
       * **Perform tests iteratively** - Specify whether to iteratively perform a test.  For example, this will use the results from an initial Welch’s t and Wilcox test routine to seed the reference (i.e., denominator of Geometric Mean calculation) for a second Welch’s t and Wilcox test routine.
@@ -485,6 +516,6 @@ multi-sample (glm, Kruskal-Wallace) tests.  The tool also estimates effect size 
 
       * **Calculate paired tests** - specify whether to calculate effect size for paired samples (applies only if abundances and effect sizes are calculated and the selected test is Welch’s t and Wilcox tests).
       * **Plot a histogram of p-values for the first Dirichlet Monte Carlo instance** - specify whether to plot a histogram of p-values for the first Dirichlet Monte Carlo instance.
-    </help>
+    ]]></help>
     <expand macro="citations"/>
 </tool>

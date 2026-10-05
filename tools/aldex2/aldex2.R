@@ -110,7 +110,7 @@ if (opt$analysis_type == "aldex") {
 
         aldex_obj <- aldex.corr(aldex_clr_obj, cont.var = cont_var_vector)
     } else if (opt$analysis_type == "aldex_effect") {
-        aldex_obj <- aldex.effect(aldex_clr_obj, include_sample_summary)
+        aldex_obj <- aldex.effect(aldex_clr_obj, include.sample.summary = include_sample_summary)
     } else if (opt$analysis_type == "aldex_expected_distance") {
         dist <- aldex.expectedDistance(aldex_clr_obj)
         png(filename = opt$output)
