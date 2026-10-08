@@ -4,7 +4,7 @@ description: LexicMap is a nucleotide sequence alignment tool for efficiently qu
 long_description: |
   LexicMap is a nucleotide sequence alignment tool for efficiently querying gene, plasmid, virus, or long-read sequences (>100 bp) against up to millions of prokaryotic genomes.
 name: lexicmap_memcap
-owner: iuc
-remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/lexicmap_memcap
+owner: d-callan
+remote_repository_url: https://github.com/d-callan/tools-iuc/tree/lexicmap-memcap-test/tools/lexicmap_memcap
 homepage_url: https://github.com/shenwei356/LexicMap
 type: unrestricted
