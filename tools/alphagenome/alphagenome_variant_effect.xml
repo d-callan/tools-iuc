@@ -1,11 +1,11 @@
 <tool id="alphagenome_variant_effect" name="AlphaGenome Variant Effect" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
-    <description>Predict variant effects using AlphaGenome</description>
+    <description>Predict variant effects on regulatory tracks</description>
     <macros>
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
     <version_command>echo @TOOL_VERSION@</version_command>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
         python '$__tool_directory__/alphagenome_variant_effect.py'
             --input '$input_vcf'
             --output '$output_vcf'
@@ -20,12 +20,12 @@
             @CMD_TEST_FIXTURE@
     ]]></command>
     <inputs>
-        <param name="input_vcf" type="data" format="vcf" label="Input VCF file" help="VCF file containing variants to score"/>
+        <param name="input_vcf" type="data" format="vcf" label="Input VCF file" help="Variants to score. Only the first ALT allele of each record is processed."/>
         <expand macro="organism_param"/>
         <expand macro="output_types_param"/>
         <expand macro="ontology_terms_param"/>
         <expand macro="sequence_length_param"/>
-        <param name="max_variants" type="integer" value="100" min="1" max="10000" label="Maximum variants to process" help="API is rate-limited; start small to verify results"/>
+        <param name="max_variants" type="integer" value="100" min="1" max="10000" label="Maximum variants to process" help="The API is rate-limited; start small to verify results."/>
         <expand macro="test_fixture_param"/>
     </inputs>
     <outputs>
@@ -39,7 +39,7 @@
             <param name="sequence_length" value="128KB"/>
             <param name="max_variants" value="3"/>
             <param name="test_fixture" value="test-data/fixture_variant_effect.json"/>
-            <output name="output_vcf">
+            <output name="output_vcf" ftype="vcf">
                 <assert_contents>
                     <has_text text="##fileformat=VCF"/>
                     <has_text text="AG_RNA_LFC=9.74931"/>
@@ -49,67 +49,49 @@
             </output>
         </test>
     </tests>
-    <help><![CDATA[
-**AlphaGenome Variant Effect Predictor**
+    <help format="markdown"><![CDATA[
+**AlphaGenome Variant Effect**
 
-Scores genetic variants using Google DeepMind's AlphaGenome model via
-``predict_variant()``. For each variant in the input VCF, the tool predicts
-reference and alternate genomic tracks and computes a max absolute
-log-fold-change (LFC) score for each selected output type.
+Predicts the effect of each variant on regulatory tracks using AlphaGenome's
+``predict_variant()`` API. The reference and alternate predictions are compared
+and the log2 fold change is written back into the VCF as INFO fields.
 
 -----
 
 **What it does**
 
-For each variant the tool:
-
-1. Creates a prediction window centered on the variant
-2. Calls AlphaGenome ``predict_variant()`` to get reference and alternate track predictions
-3. Computes max absolute log2(alt / ref) across the track as an effect score
-4. Annotates the VCF INFO field with per-type scores and an overall max
-
------
-
-**Output INFO fields**
-
-- ``AG_RNA_LFC`` — RNA-seq max absolute log-fold-change
-- ``AG_ATAC_LFC`` — ATAC-seq max absolute log-fold-change
-- ``AG_SPLICE_LFC`` — Splice sites max absolute log-fold-change
-- ``AG_MAX_EFFECT`` — Overall max across all selected types
-
-(Additional fields appear for each selected output type.)
+1. Reads variants from a VCF file.
+2. For each variant, builds a prediction window around it and calls
+   ``predict_variant()`` for the requested output types.
+3. Computes the log2 fold change between the alternate and reference
+   predictions for every track.
+4. Writes the maximum absolute effect per output type into the VCF INFO column.
 
 -----
 
-**Organisms**
+**Output**
 
-- **Human (hg38)** — Homo sapiens
-- **Mouse (mm10)** — Mus musculus
+The output is a VCF with the original records plus these INFO fields:
 
-No reference genome file is needed; the API handles sequence context internally.
+- ``AG_RNA_LFC`` — maximum absolute log2 fold change for RNA-seq
+- ``AG_ATAC_LFC`` — maximum absolute log2 fold change for ATAC-seq
+- ``AG_SPLICE_LFC`` — maximum absolute log2 fold change for splice sites
+- ``AG_MAX_EFFECT`` — maximum absolute log2 fold change across all requested
+  output types
 
------
-
-**Ontology terms**
-
-Optional tissue/cell type context for predictions. Common terms:
-
-- ``UBERON:0001157`` — Peyer's patch
-- ``UBERON:0002107`` — Liver
-- ``UBERON:0000955`` — Brain
-- ``CL:0000746`` — Cardiac muscle cell
-- ``CL:0000540`` — Neuron
+Additional per-output-type fields are added for every output type selected
+(e.g. ``AG_CAGE_LFC``, ``AG_DNASE_LFC``, ``AG_HISTONE_LFC``, ``AG_TF_LFC``,
+``AG_PROCAP_LFC``, ``AG_SPLICEUSE_LFC``, ``AG_SPLICEJNC_LFC``,
+``AG_CONTACT_LFC``).
 
 -----
 
-**Prediction window sizes**
+**Notes**
 
-Larger windows capture more genomic context but cost more compute:
-
-- **16 KB** — Fast, minimal context
-- **128 KB** — Good for most variants
-- **512 KB** — Extended regulatory context
-- **1 MB** — Maximum context (default, recommended)
+- Only the first ALT allele of each VCF record is scored.
+- The API is rate-limited; use **Maximum variants to process** to cap the run.
+- Ontology terms restrict the prediction to matching tracks (e.g. a specific
+  tissue or cell type). Leave empty to use all tracks.
     ]]></help>
     <expand macro="citations"/>
 </tool>
