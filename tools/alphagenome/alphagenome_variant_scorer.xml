@@ -5,7 +5,7 @@
     </macros>
     <expand macro="requirements"/>
     <version_command>echo @TOOL_VERSION@</version_command>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
         python '$__tool_directory__/alphagenome_variant_scorer.py'
             --input '$input_vcf'
             --output '$output_tsv'
@@ -41,10 +41,9 @@
             <option value="SPLICE_JUNCTIONS">Splice junctions</option>
             <option value="CONTACT_MAPS">Contact maps</option>
             <option value="POLYADENYLATION">Polyadenylation</option>
-            <validator type="no_options" message="Select at least one scorer"/>
         </param>
         <expand macro="sequence_length_param"/>
-        <param name="max_variants" type="integer" value="100" min="1" max="10000" label="Maximum variants to process" help="API is rate-limited; start small to verify results"/>
+        <param name="max_variants" type="integer" value="100" min="1" max="10000" label="Maximum variants to process" help="The API is rate-limited; start small to verify results."/>
         <expand macro="test_fixture_param"/>
     </inputs>
     <outputs>
@@ -58,7 +57,7 @@
             <param name="sequence_length" value="16KB"/>
             <param name="max_variants" value="3"/>
             <param name="test_fixture" value="test-data/fixture_variant_scorer.json"/>
-            <output name="output_tsv">
+            <output name="output_tsv" ftype="tabular">
                 <assert_contents>
                     <has_text text="variant_id"/>
                     <has_text text="gene_name"/>
@@ -69,56 +68,54 @@
             </output>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 **AlphaGenome Variant Scorer**
 
-Scores genetic variants using AlphaGenome's ``score_variant()`` API, which
-performs server-side gene-level aggregation with spatial masking and empirical
-quantile normalization. Returns structured per-gene, per-track scores.
+Scores variants at gene level using AlphaGenome's ``score_variant()`` API with
+the recommended variant scorers and empirical quantile normalization.
 
 -----
 
 **What it does**
 
-For each variant the tool:
-
-1. Creates a prediction window centered on the variant
-2. Calls ``score_variant()`` with selected scorers from ``RECOMMENDED_VARIANT_SCORERS``
-3. Converts structured AnnData results to tabular format using ``tidy_scores()``
-4. Outputs one row per variant x gene x track x scorer combination
-
-This differs from the Variant Effect tool which uses ``predict_variant()`` with
-manual max-abs-LFC scoring. ``score_variant()`` provides proper gene-level
-aggregation, quantile normalization, and richer annotation.
+1. Reads variants from a VCF file.
+2. For each variant, builds a prediction window and calls ``score_variant()``
+   with the selected scorers.
+3. Converts the returned AnnData objects to a tidy table with ``tidy_scores()``.
+4. Writes one row per variant, gene, track and scorer.
 
 -----
 
 **Output columns**
 
-- ``variant_id`` — chr:pos:ref>alt
-- ``scored_interval`` — genomic interval used for scoring
-- ``gene_id`` — Ensembl gene ID
-- ``gene_name`` — gene symbol
-- ``gene_type`` — protein_coding, lncRNA, etc.
-- ``gene_strand`` — +/-
+- ``variant_id`` — ``chrom:pos:ref>alt``
+- ``scored_interval`` — interval used for scoring
+- ``gene_id``, ``gene_name``, ``gene_type``, ``gene_strand`` — gene annotation
 - ``output_type`` — RNA_SEQ, ATAC, etc.
 - ``variant_scorer`` — scorer name
 - ``track_name`` — specific track
 - ``raw_score`` — raw effect score
 - ``quantile_score`` — empirical quantile (0-1)
 
-Plus optional metadata columns (ontology_curie, gtex_tissue, biosample_name, etc.)
+Additional metadata columns (``ontology_curie``, ``gtex_tissue``,
+``biosample_name``, ...) are included when available.
 
 -----
 
 **Scorer categories**
 
-- **Expression**: RNA_SEQ, RNA_SEQ_ACTIVE
-- **Chromatin**: ATAC, DNASE, ATAC_ACTIVE, DNASE_ACTIVE
-- **Transcription**: CAGE, PROCAP, CAGE_ACTIVE, PROCAP_ACTIVE
-- **TF/Histone**: CHIP_TF, CHIP_HISTONE, CHIP_TF_ACTIVE, CHIP_HISTONE_ACTIVE
-- **Splicing**: SPLICE_SITES, SPLICE_SITE_USAGE, SPLICE_JUNCTIONS
-- **Other**: CONTACT_MAPS, POLYADENYLATION
+- **Expression** — RNA_SEQ, RNA_SEQ_ACTIVE
+- **Chromatin** — ATAC, DNASE (and ``_ACTIVE`` variants)
+- **Transcription** — CAGE, PROCAP (and ``_ACTIVE`` variants)
+- **TF / Histone** — CHIP_TF, CHIP_HISTONE (and ``_ACTIVE`` variants)
+- **Splicing** — SPLICE_SITES, SPLICE_SITE_USAGE, SPLICE_JUNCTIONS
+- **Other** — CONTACT_MAPS, POLYADENYLATION
+
+-----
+
+**Notes**
+
+- The API is rate-limited; use **Maximum variants to process** to cap the run.
     ]]></help>
     <expand macro="citations"/>
 </tool>

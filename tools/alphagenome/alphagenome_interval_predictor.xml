@@ -1,11 +1,11 @@
 <tool id="alphagenome_interval_predictor" name="AlphaGenome Interval Predictor" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
-    <description>Predict regulatory tracks for genomic intervals</description>
+    <description>Predict regulatory tracks over genomic intervals</description>
     <macros>
         <import>macros.xml</import>
     </macros>
     <expand macro="requirements"/>
     <version_command>echo @TOOL_VERSION@</version_command>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
         python '$__tool_directory__/alphagenome_interval_predictor.py'
             --input '$input_bed'
             --output '$output_tsv'
@@ -17,27 +17,27 @@
             --sequence-length '$sequence_length'
             --max-intervals $max_intervals
             --output-mode '$output_mode.mode'
-            #if str($output_mode.mode) == "binned"
+            #if $output_mode.mode == 'binned'
                 --bin-size $output_mode.bin_size
             #end if
             @CMD_ONTOLOGY_TERMS@
             @CMD_TEST_FIXTURE@
     ]]></command>
     <inputs>
-        <param name="input_bed" type="data" format="bed" label="Input BED file" help="Genomic intervals to predict regulatory tracks for"/>
+        <param name="input_bed" type="data" format="bed" label="Input BED file" help="Genomic intervals to predict on. The fourth column, if present, is used as the interval name."/>
         <expand macro="organism_param"/>
         <expand macro="output_types_param"/>
         <expand macro="ontology_terms_param"/>
         <expand macro="sequence_length_param"/>
-        <param name="max_intervals" type="integer" value="50" min="1" max="1000" label="Maximum intervals to process" help="API is rate-limited; start small to verify results"/>
+        <param name="max_intervals" type="integer" value="50" min="1" max="1000" label="Maximum intervals to process" help="The API is rate-limited; start small to verify results."/>
         <conditional name="output_mode">
             <param name="mode" type="select" label="Output mode">
-                <option value="summary" selected="true">Summary (one row per interval x track)</option>
-                <option value="binned">Binned (spatial resolution within intervals)</option>
+                <option value="summary" selected="true">Summary (one row per interval and track)</option>
+                <option value="binned">Binned (per-bin mean signal)</option>
             </param>
             <when value="summary"/>
             <when value="binned">
-                <param name="bin_size" type="integer" value="128" min="1" max="4096" label="Bin size (bp)" help="Divide each interval into bins of this width for spatial resolution"/>
+                <param name="bin_size" type="integer" value="128" min="1" max="4096" label="Bin size (bases)"/>
             </when>
         </conditional>
         <expand macro="test_fixture_param"/>
@@ -52,11 +52,9 @@
             <param name="output_types" value="RNA_SEQ"/>
             <param name="sequence_length" value="16KB"/>
             <param name="max_intervals" value="3"/>
-            <conditional name="output_mode">
-                <param name="mode" value="summary"/>
-            </conditional>
+            <param name="output_mode|mode" value="summary"/>
             <param name="test_fixture" value="test-data/fixture_interval_predictor.json"/>
-            <output name="output_tsv">
+            <output name="output_tsv" ftype="tabular">
                 <assert_contents>
                     <has_text text="chrom"/>
                     <has_text text="mean_signal"/>
@@ -67,61 +65,46 @@
             </output>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 **AlphaGenome Interval Predictor**
 
-Predicts regulatory tracks for genomic intervals using AlphaGenome's
-``predict_interval()`` API. No variants — just baseline characterization
-of the chromatin, expression, and splicing landscape at each region.
+Predicts regulatory tracks over genomic intervals using AlphaGenome's
+``predict_interval()`` API. This is the baseline prediction mode: it returns
+the model's predicted signal across the whole window, without any variant.
 
 -----
 
 **What it does**
 
-For each interval in the input BED file:
-
-1. Creates a prediction window centered on the interval
-2. Calls ``predict_interval()`` for selected output types
-3. Computes summary statistics (mean, max) over the original BED region
-4. Reports per-track values in tabular format
+1. Reads genomic intervals from a BED file.
+2. Resizes each interval to the selected prediction window.
+3. Calls ``predict_interval()`` for the requested output types.
+4. Writes a tabular summary of the predicted signal per track.
 
 -----
 
-**Output modes**
+**Output columns**
 
-- **Summary** (default): One row per interval x track with mean and max signal.
-  Compact output good for screening many regions.
-- **Binned**: Divides each interval into fixed-width bins (default 128bp) and
-  reports mean signal per bin. Provides spatial resolution for visualizing
-  signal patterns across a region.
-
------
-
-**Output columns — summary mode**
+Summary mode:
 
 - ``chrom``, ``start``, ``end`` — interval coordinates
-- ``name`` — region name from BED
+- ``name`` — interval name from the BED file
 - ``output_type`` — RNA_SEQ, ATAC, etc.
-- ``track_name`` — specific experimental track
-- ``ontology_curie`` — tissue/cell type ontology term
-- ``mean_signal`` — mean predicted signal across the region
-- ``max_signal`` — maximum predicted signal in the region
+- ``track_name`` — specific track
+- ``ontology_curie`` — ontology term for the track, if available
+- ``mean_signal`` — mean predicted signal over the interval
+- ``max_signal`` — maximum predicted signal over the interval
 
-**Output columns — binned mode**
-
-- ``chrom``, ``bin_start``, ``bin_end`` — bin coordinates
-- ``region_name`` — original region name
-- ``output_type``, ``track_name``, ``ontology_curie`` — as above
-- ``mean_signal`` — mean predicted signal in the bin
+Binned mode reports ``bin_start``, ``bin_end`` and a per-bin ``mean_signal``
+instead of the interval-level statistics.
 
 -----
 
-**Use cases**
+**Notes**
 
-- Characterize regulatory activity at GWAS loci
-- Compare predicted chromatin landscapes between regions
-- Identify active promoters, enhancers, or splice sites
-- Generate baseline predictions for regions of interest
+- The API is rate-limited; use **Maximum intervals to process** to cap the run.
+- Ontology terms restrict the prediction to matching tracks (e.g. a specific
+  tissue or cell type). Leave empty to use all tracks.
     ]]></help>
     <expand macro="citations"/>
 </tool>
