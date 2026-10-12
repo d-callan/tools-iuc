@@ -1,0 +1,62 @@
+# Agent Notes
+
+## Update round 1
+
+## 2.0.1 → 2.0.2 version bump (clean, no wrapper changes needed)
+
+**Upstream change:** 2.0.2 (2025-11-12) is a single bug fix — "re-add keep_default_na=False to the read_bed() function" (commit a46cc56). No CLI changes.
+
+**Verification:** Installed `AmpliGone=2.0.2` from bioconda and diffed `ampligone --help` against the flags the wrapper already uses. All flags (`--input`, `--output`, `--reference`, `--primers`, `--amplicon-type`, `--fragment-lookaround-size`, `--error-rate`, `--export-primers`, `--threads`) are unchanged. No new/renamed/removed flags, no changed defaults, no new required args.
+
+**Test data unaffected:** The `keep_default_na=False` fix only matters for BED files containing literal "NA" values in the name column. Neither `test-data/SARS-CoV-2-ARTIC-V5.3.2.scheme.bed` nor `test-data/synthetic.bed` contains NA values, so no test-data or expectation changes were required.
+
+**Ran all 3 tests manually under conda 2.0.2** (planemo test timed out at 300s during env setup, so verified directly):
+- Test 1 (fastq + scheme.bed): 5 reads out, `@SRR30635841.1`..`.5` present ✓
+- Test 2 (fastq + ARTIC fasta + export-primers): cleaned reads present; exported BED contains `MN908947.3:6204-6237_LEFT` and `MN908947.3:25744-25777_RIGHT` ✓
+- Test 3 (synthetic.bam + synthetic.bed): 2 reads out, `read_number_2_last_120_of_ref` and `read_number_1_first_120_of_ref` ✓
+
+**Scope:** Only `ampligone.xml` changed — `@TOOL_VERSION@` 2.0.1→2.0.2, `@VERSION_SUFFIX@` reset to 0, and the `<requirements>` pin now uses `@TOOL_VERSION@` (was hardcoded `2.0.1`). No other edits.
+
+**Note:** `--virtual-primers`, `--alignment-preset`, `--alignment-scoring`, `--verbose`, `--quiet`, and `-to` exist upstream but were already absent from the wrapper before this bump (they were added in 2.0.0). Per the "keep the change scoped to the version bump" instruction I did not add them here — they'd be a separate feature request.
+
+## Update round 2
+
+## Round 2 — validation fixes + a real latent bug found
+
+**Upstream 2.0.2 is a pure bug fix** (`keep_default_na=False` re-added to `read_bed()`, commit a46cc56). Verified via `ampligone --help` under conda 2.0.2 that every CLI flag the wrapper uses is unchanged. No new/renamed/removed flags, no changed defaults. Test BED files contain no `NA` values, so no test-data changes needed.
+
+**IMPORTANT — latent wrapper bug (pre-existing, not caused by this bump):** AmpliGone hard-requires **≥2 threads** and exits 1 with "AmpliGone requires a minimum of 2 threads for execution, but only 1 thread was provided." The old command passed `--threads "${GALAXY_SLOTS:-2}"` verbatim, so any Galaxy job with 1 core failed outright. Confirmed identical behaviour on both 2.0.1 and 2.0.2, so it is not a regression — but it made all 3 tests fail locally (the validation harness runs with 1 slot). Fixed by clamping: `--threads "$(( ${GALAXY_SLOTS:-2} < 2 ? 2 : ${GALAXY_SLOTS:-2} ))"`. Verified the clamp yields 2/2/8 for GALAXY_SLOTS=1/2/8 and 2 when unset. Note CI passes `galaxy-slots` = runner core count (≥2), so CI alone would not have caught this.
+
+**Cheetah gotcha:** `$((` and `${...}` must both be backslash-escaped (`\$((`, `\${`) or Cheetah raises a ParseError and the job renders no command at all (symptom: `exit_code: None`). Verified with a standalone Cheetah3 render test.
+
+**Validation-required changes** (the harness flagged these; they are style fixes, not upstream-driven):
+- `<command detect_errors="aggressive">` (was `exit_code`)
+- `<help format="markdown">` (was RST)
+- removed `optional="true"` from `--fragment-lookaround-size` (it has a default)
+- added `ftype` to all `<test>` outputs
+
+**Scope note:** the diff is larger than a pure version bump because of the above. The only functional change is the thread clamp; everything else is lint/style compliance. I did NOT add the 2.0.0-era flags (`--virtual-primers`, `--alignment-preset`, `--alignment-scoring`, `--verbose`, `--quiet`, `-to`) — they were already absent before this bump and adding them would be a separate feature request.
+
+**Verified:** `planemo lint` clean; `planemo test` → "All 3 tests passed."
+
+## Update round 3
+
+## Round 3 — fixed the reported critical/warning issues (all verified empirically)
+
+**1. [critical] `--error-rate 0` was silently dropped.** The old guard `#if $opt_args.error_rate` is falsy for `0`, so a user following the help ("Use 0 for exact primer matches") got AmpliGone's default `0.1` instead. Confirmed: `--error-rate 0` and `--error-rate 0.1` produce different output (md5 `620db49b…` vs `b7732d2f…`), and no-flag output matches `0.1`. Fixed with `#if $opt_args.error_rate is not None` (verified via Cheetah render: `0.0 -> YES`, `None -> NO`). Added a dedicated test with `error_rate=0`.
+
+**2. [warning] gz input produced gz output under the `fastqsanger` datatype.** Added `<change_format>` keyed on `inputs.input.ext == fastqsanger.gz` → `fastqsanger.gz`. Added a gz-input test.
+
+**3. [warning] gz output path is broken under the Python conda resolves.** Reproduced: with Python 3.12/3.14, `pgzip.open(..., "wt")` raises `AttributeError: 'PgzipFile' object has no attribute '_buffer'`; AmpliGone catches nothing, exits **0**, and leaves a **0-byte** file — so `detect_errors="aggressive"` reports success on an empty output. Verified `python=3.11` makes the gz path work (679-byte valid gzip). Added `<requirement type="package" version="3.11">python</requirement>` with an explanatory comment. Note: gz **input** is fine on all Pythons — only gz **output** is affected.
+
+**4. [warning] weak test coverage.** Added `not_has_text` on the first 33 bases of read 1 (primer-derived, verified trimmed), plus tests for gz input, `--amplicon-type fragmented` + `--fragment-lookaround-size`, and `--error-rate 0`. Now 6 tests, all passing.
+
+**IMPORTANT — output is NON-DETERMINISTIC.** Two identical default runs produce different read *order* (same 5 reads, same lengths, different sequence). AmpliGone distributes reads across threads, so ordering varies. This is why no test uses `compare="sim_size"` or an exact expected file — all assertions are order-independent (`has_text`/`not_has_text`/`has_size`). Any future test must avoid exact-file comparison.
+
+**gz test uses `has_size`, not `has_text`.** Galaxy's `has_text` compares raw bytes and cannot see inside gzip, so the gz test asserts size (600 ± 200) — which still catches the 0-byte pgzip failure mode.
+
+**Cheetah gotcha (reconfirmed):** `$((` and `${...}` must both be backslash-escaped (`\$((`, `\${`) or Cheetah raises ParseError and the job renders no command at all (symptom: `exit_code: None`).
+
+**Thread clamp (from round 2, still in place):** AmpliGone hard-requires ≥2 threads; `--threads "$(( ${GALAXY_SLOTS:-2} < 2 ? 2 : ${GALAXY_SLOTS:-2} ))"` clamps up so 1-core jobs don't fail.
+
+**Verified:** `planemo lint` clean; `planemo test` → "All 6 tests passed."

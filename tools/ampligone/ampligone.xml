@@ -1,14 +1,19 @@
 <tool id="ampligone" name="AmpliGone" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="23.2">
     <description>Find and remove primers from NGS amplicon reads</description>
     <macros>
-        <token name="@TOOL_VERSION@">2.0.1</token>
+        <token name="@TOOL_VERSION@">2.0.2</token>
         <token name="@VERSION_SUFFIX@">0</token>
     </macros>
     <requirements>
         <requirement type="package" version="@TOOL_VERSION@">AmpliGone</requirement>
+        <!-- AmpliGone writes gzipped FASTQ output via pgzip. Under Python >=3.12 the
+             pgzip version resolved by conda raises AttributeError ('PgzipFile' object
+             has no attribute '_buffer'), AmpliGone swallows the error, exits 0 and
+             leaves a 0-byte output. Pinning Python 3.11 keeps the gz output path working. -->
+        <requirement type="package" version="3.11">python</requirement>
     </requirements>
     <version_command>ampligone --version</version_command>
-    <command detect_errors="exit_code"><![CDATA[
+    <command detect_errors="aggressive"><![CDATA[
  #import re
 
  #set $inputs_map = {
@@ -47,7 +52,8 @@
   --primers '$inputs_map['primers']'
 
  ## Compute options
-  --threads "\${GALAXY_SLOTS:-2}"
+ ## AmpliGone hard-requires a minimum of 2 threads, so clamp GALAXY_SLOTS up to 2
+  --threads "\$(( \${GALAXY_SLOTS:-2} < 2 ? 2 : \${GALAXY_SLOTS:-2} ))"
 
  ##optional arguments
 
@@ -57,7 +63,9 @@
   #if $opt_args.ampli_type.amplicon_type == 'fragmented'
     --fragment-lookaround-size $opt_args.ampli_type.fragment_lookaround_size 
   #end if
-  #if $opt_args.error_rate
+  ## Test for presence, not truthiness: a user-set error rate of 0 (exact primer
+  ## matches, as documented in the help) is falsy and would otherwise be dropped.
+  #if $opt_args.error_rate is not None
     --error-rate $opt_args.error_rate
   #end if
 
@@ -72,11 +80,10 @@
     <inputs>
         <section name="inputs" title="Inputs" expanded="true">
             <param argument="--input" type="data" format="fastqsanger,fastqsanger.gz,bam" label="Input file" help="Input file with reads in FASTQ format."/>
-            <param argument="--reference" type="data" format="fasta" label="Reference genome" help="Input Reference genome in FASTA format." />
-            <param argument="--primers" type="data" format="fasta,bed" label="Used primer sequences" help="Used primer sequences in FASTA or BED format." />
-            <param argument="--export-primers" type="boolean" checked="false" truevalue="yes" falsevalue="no" optional="true" label="Output cut primers coordinates" help="Output BED file with found primer coordinates if they are actually cut from the reads."/>
+            <param argument="--reference" type="data" format="fasta" label="Reference genome" help="Input Reference genome in FASTA format."/>
+            <param argument="--primers" type="data" format="fasta,bed" label="Used primer sequences" help="Used primer sequences in FASTA or BED format."/>
+            <param argument="--export-primers" type="boolean" checked="false" truevalue="yes" falsevalue="no" label="Output cut primers coordinates" help="Output BED file with found primer coordinates if they are actually cut from the reads."/>
         </section>
-
         <section name="opt_args" title="Optional Arguments" expanded="false">
             <conditional name="ampli_type">
                 <param argument="--amplicon-type" type="select" label="Define the amplicon-type" help="Define the amplicon-type, either being 'end-to-end', 'end-to-mid', or 'fragmented'. See the docs for more info.">
@@ -85,79 +92,139 @@
                     <option value="fragmented">fragmented</option>
                 </param>
                 <when value="fragmented">
-                    <param argument="--fragment-lookaround-size" type="integer" value="10" optional="true" label="Fragment lookaround size" help="The number of bases to look around a primer-site to consider it part of a fragment." />
+                    <param argument="--fragment-lookaround-size" type="integer" value="10" label="Fragment lookaround size" help="The number of bases to look around a primer-site to consider it part of a fragment."/>
                 </when>
                 <when value="end-to-end"/>
                 <when value="end-to-mid"/>
             </conditional>
-            <param argument="--error-rate" type="float" min="0" max="1" value="0.1" label="Error rate" help="The maximum allowed error rate for the primer search. Use 0 for exact primer matches." />
+            <param argument="--error-rate" type="float" min="0" max="1" value="0.1" label="Error rate" help="The maximum allowed error rate for the primer search. Use 0 for exact primer matches."/>
         </section>
     </inputs>
-
     <outputs>
-        <data name="cleaned" format="fastqsanger" label="${tool.name} on ${inputs.input.name} ($on_string): Cleaned reads"/>
+        <data name="cleaned" format="fastqsanger" label="${tool.name} on ${inputs.input.name} ($on_string): Cleaned reads">
+            <!-- gz input produces gz output; declare the matching datatype so Galaxy
+                 does not store a gzip file under the uncompressed fastqsanger type. -->
+            <change_format>
+                <when input="inputs.input.ext" value="fastqsanger.gz" format="fastqsanger.gz"/>
+            </change_format>
+        </data>
         <data name="exp_prim" format="bed" label="${tool.name} on ${on_string}: Detected primer coordinates">
             <filter>inputs['primers'].ext == 'fasta' and inputs['export_primers'] is True</filter>
-        </data> 
+        </data>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
             <section name="inputs">
                 <param name="input" value="sars-cov-2.fastq"/>
                 <param name="reference" value="SARS-CoV-2-reference.fasta"/>
-                <param name="primers" value="SARS-CoV-2-ARTIC-V5.3.2.scheme.bed" />
+                <param name="primers" value="SARS-CoV-2-ARTIC-V5.3.2.scheme.bed"/>
             </section>
-            <output name="cleaned">
+            <output name="cleaned" ftype="fastqsanger">
                 <assert_contents>
                     <has_text text="@SRR30635841.1"/>
                     <has_text text="@SRR30635841.2"/>
                     <has_text text="@SRR30635841.3"/>
                     <has_text text="@SRR30635841.4"/>
                     <has_text text="@SRR30635841.5"/>
-                </assert_contents>  
-            </output> 
+                    <!-- first 33 bases of read 1 are primer-derived and must be trimmed -->
+                    <not_has_text text="AATTCACAGACTTTAATAACAACATTAGTAGCG"/>
+                </assert_contents>
+            </output>
         </test>
         <test expect_num_outputs="2">
             <section name="inputs">
                 <param name="input" value="sars-cov-2.fastq"/>
                 <param name="reference" value="SARS-CoV-2-reference.fasta"/>
-                <param name="primers" value="ARTIC-V5.3.2.fasta" />
+                <param name="primers" value="ARTIC-V5.3.2.fasta"/>
                 <param name="export_primers" value="yes"/>
             </section>
-            <output name="cleaned">
+            <output name="cleaned" ftype="fastqsanger">
                 <assert_contents>
                     <has_text text="@SRR30635841.1"/>
                     <has_text text="@SRR30635841.2"/>
                     <has_text text="@SRR30635841.3"/>
                     <has_text text="@SRR30635841.4"/>
                     <has_text text="@SRR30635841.5"/>
-                </assert_contents>  
-            </output> 
-            <output name="exp_prim">
+                </assert_contents>
+            </output>
+            <output name="exp_prim" ftype="bed">
                 <assert_contents>
                     <has_text text="MN908947.3:6204-6237_LEFT"/>
                     <has_text text="MN908947.3:25744-25777_RIGHT"/>
-                </assert_contents>  
+                </assert_contents>
             </output>
         </test>
         <test expect_num_outputs="1">
             <section name="inputs">
                 <param name="input" value="synthetic.bam"/>
                 <param name="reference" value="synthetic.fasta"/>
-                <param name="primers" value="synthetic.bed" />
+                <param name="primers" value="synthetic.bed"/>
             </section>
-            <output name="cleaned">
+            <output name="cleaned" ftype="fastqsanger">
                 <assert_contents>
                     <has_text text="read_number_2_last_120_of_ref"/>
                     <has_text text="read_number_1_first_120_of_ref"/>
-                </assert_contents>  
-            </output> 
+                </assert_contents>
+            </output>
+        </test>
+        <!-- gz input must yield gz output (exercises the pgzip output path) -->
+        <test expect_num_outputs="1">
+            <section name="inputs">
+                <param name="input" value="sars-cov-2.fastq.gz"/>
+                <param name="reference" value="SARS-CoV-2-reference.fasta"/>
+                <param name="primers" value="SARS-CoV-2-ARTIC-V5.3.2.scheme.bed"/>
+            </section>
+            <output name="cleaned" ftype="fastqsanger.gz">
+                <!-- has_text cannot be used on gzip content (Galaxy compares raw bytes),
+                     so assert on size instead. This still catches the pgzip failure mode,
+                     which exits 0 and leaves a 0-byte file. -->
+                <assert_contents>
+                    <has_size value="600" delta="200"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- fragmented amplicon type + fragment-lookaround-size -->
+        <test expect_num_outputs="1">
+            <section name="inputs">
+                <param name="input" value="sars-cov-2.fastq"/>
+                <param name="reference" value="SARS-CoV-2-reference.fasta"/>
+                <param name="primers" value="SARS-CoV-2-ARTIC-V5.3.2.scheme.bed"/>
+            </section>
+            <section name="opt_args">
+                <conditional name="ampli_type">
+                    <param name="amplicon_type" value="fragmented"/>
+                    <param name="fragment_lookaround_size" value="10"/>
+                </conditional>
+            </section>
+            <output name="cleaned" ftype="fastqsanger">
+                <assert_contents>
+                    <has_text text="@SRR30635841.1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- error rate of 0 (exact primer matches) must be passed through, not dropped -->
+        <test expect_num_outputs="1">
+            <section name="inputs">
+                <param name="input" value="sars-cov-2.fastq"/>
+                <param name="reference" value="SARS-CoV-2-reference.fasta"/>
+                <param name="primers" value="SARS-CoV-2-ARTIC-V5.3.2.scheme.bed"/>
+            </section>
+            <section name="opt_args">
+                <param name="error_rate" value="0"/>
+            </section>
+            <output name="cleaned" ftype="fastqsanger">
+                <assert_contents>
+                    <has_text text="@SRR30635841.1"/>
+                    <has_text text="@SRR30635841.5"/>
+                </assert_contents>
+            </output>
         </test>
     </tests>
-    <help><![CDATA[
+    <help format="markdown"><![CDATA[
 **AmpliGone**
 
 In contrast to a lot of other primer-removal tools, AmpliGone does not actively look for primer sequences within the NGS reads. When providing BED input, reads are trimmed based on primer sequence coordinates in relation to a given reference sequence. Additionally, AmpliGone is able to compensate for, and therefore properly clean, reads that start or end outside of a primer-region as this is a common occurrence in amplicon-based sequencing data.
+
 AmpliGone works with both reads in FASTQ format, as well as aligned data in BAM-format. However, when data is presented in the BAM-format then only read-data (sequence and quality scores) will be used. Other data present in the BAM-format will not be used in this version of AmpliGone.
 
 Currently, AmpliGone supports Nanopore data and Illumina data. The Illumina platform (NextSeq/MiSeq/HiSeq/other) does not matter.
@@ -166,12 +233,12 @@ It is however important that you know the read-length in relation to the amplico
 
 AmpliGone is build and tested with Nanopore and Illumina data (fastq) in mind and supports 'end-to-end', 'end-to-mid' and 'fragmented' amplicons to be cleaned.
 
+-----
 
-**More Information**  
+**More Information**
 
 - **Official Repository**: https://github.com/RIVM-bioinformatics/AmpliGone
 - **Extended User Guide**: https://rivm-bioinformatics.github.io/AmpliGone/@TOOL_VERSION@/
-  
     ]]></help>
     <citations>
         <citation type="doi">10.5281/zenodo.7684307</citation>
