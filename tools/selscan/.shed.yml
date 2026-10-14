@@ -1,0 +1,24 @@
+---
+name: selscan
+owner: d-callan
+description: EHH-based scans for positive selection in genomes
+categories:
+- Sequence Analysis
+- Statistics
+- Variant Analysis
+homepage_url: https://github.com/szpiech/selscan
+long_description: |
+  selscan is a multithreaded program that calculates EHH-based statistics for
+  detecting positive selection from phased or unphased genotype data. It
+  implements iHS, nSL, XP-EHH, XP-nSL and iHH12, and provides a downstream
+  normalization subcommand that standardizes scores across frequency bins and
+  identifies extreme-score windows.
+remote_repository_url: https://github.com/d-callan/tools-iuc/tree/main/tools/selscan
+type: unrestricted
+auto_tool_repositories:
+  name_template: "{{ tool_id }}"
+  description_template: "Wrapper for the selscan tool {{ tool_name }}"
+suite:
+  name: "suite_selscan"
+  description: "A suite of Galaxy tools for EHH-based scans of positive selection with selscan"
+  type: repository_suite_definition
