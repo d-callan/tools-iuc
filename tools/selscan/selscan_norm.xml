@@ -1,0 +1,196 @@
+<tool id="selscan_norm" name="selscan norm" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>normalize selscan scores and find extreme-score windows</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+#set $stat = str($statistic.statistic_selector)
+#set $nfiles = len($input_files)
+#if $stat in ('ihs', 'nsl'):
+    #set $suffix = str($bins) + 'bins.norm'
+#else:
+    #set $suffix = 'norm'
+#end if
+#set $flist = ['normed/input_' + str($i) + '.out' for $i in range($nfiles)]
+mkdir -p normed normed_out windows_out
+#for $i, $f in enumerate($input_files):
+    && ln -s '$f' normed/input_${i}.out
+#end for
+&& selscan norm
+--${stat}
+--files #echo ' '.join($flist)#
+#if $stat in ('ihs', 'nsl'):
+    --bins $bins
+#end if
+--winsize $winsize
+--qbins $qbins
+--min-snps $min_snps
+--crit-val $crit_val
+#if $crit_percent:
+    --crit-percent $crit_percent
+#end if
+$bp_win
+$first
+$fine_percentile
+--log norm.log
+#for $i in range($nfiles):
+    && mv normed/input_${i}.out.${suffix} normed_out/${i}.tabular
+#end for
+#if $bp_win:
+    #set $winsuffix = str(int($winsize) // 1000) + 'kb.windows'
+    #for $i in range($nfiles):
+        && mv normed/input_${i}.out.${suffix}.${winsuffix} windows_out/${i}.tabular
+    #end for
+#end if
+&& mv norm.log '$norm_log'
+    ]]></command>
+    <inputs>
+        <conditional name="statistic">
+            <param name="statistic_selector" type="select" label="Statistic that was calculated">
+                <option value="ihs">iHS</option>
+                <option value="nsl">nSL</option>
+                <option value="xpehh">XP-EHH</option>
+                <option value="xpnsl">XP-nSL</option>
+                <option value="ihh12">iHH12</option>
+            </param>
+            <when value="ihs"/>
+            <when value="nsl"/>
+            <when value="xpehh"/>
+            <when value="xpnsl"/>
+            <when value="ihh12"/>
+        </conditional>
+        <param name="input_files" type="data" format="tabular" multiple="true" label="selscan score files" help="One or more unnormalized selscan output files (e.g. *.ihs.out). All files must be for the same statistic and are normalized jointly."/>
+        <param argument="--bins" type="integer" value="100" min="1" label="Number of frequency bins" help="Number of frequency bins used to normalize iHS and nSL scores. Only used for iHS and nSL."/>
+        <param argument="--winsize" type="integer" value="100000" min="1" label="Window size (bp)" help="Window size in bp used to search for extreme-score windows."/>
+        <param argument="--qbins" type="integer" value="10" min="1" label="Number of quantile bins" help="Number of quantile bins used to group windows by SNP count."/>
+        <param argument="--min-snps" type="integer" value="10" min="1" label="Minimum SNPs per window" help="Minimum number of SNPs required in a window for it to be reported."/>
+        <param argument="--crit-val" type="float" value="2" min="0" label="Critical value" help="Number of standard deviations from the mean used to flag extreme scores."/>
+        <param argument="--crit-percent" type="float" optional="true" min="0" max="1" label="Critical percentile" help="Instead of a critical value, flag the top and bottom fraction of scores. Must be between 0 and 1."/>
+        <param argument="--bp-win" type="boolean" truevalue="--bp-win" falsevalue="" checked="false" label="Compute bp-based windows" help="Compute extreme-score windows over fixed-size bp windows and report them as a separate output collection."/>
+        <param argument="--first" type="boolean" truevalue="--first" falsevalue="" checked="false" label="Use only the first file for normalization" help="Calculate the normalization parameters from the first input file only, then apply them to all files."/>
+        <param argument="--fine-percentile" type="boolean" truevalue="--fine-percentile" falsevalue="" checked="false" label="Report fine-grained percentiles" help="Report percentiles 1 to 100 for each window instead of only the 95th and 99th."/>
+    </inputs>
+    <outputs>
+        <collection name="norm_out" type="list" label="${tool.name} normalized ${statistic.statistic_selector} scores on ${on_string}">
+            <discover_datasets pattern="__name_and_ext__" directory="normed_out" format="tabular"/>
+        </collection>
+        <collection name="windows_out" type="list" label="${tool.name} extreme windows on ${on_string}">
+            <discover_datasets pattern="__name_and_ext__" directory="windows_out" format="tabular"/>
+            <filter>bp_win</filter>
+        </collection>
+        <data name="norm_log" format="txt" label="${tool.name} normalization log on ${on_string}"/>
+    </outputs>
+    <tests>
+        <!-- Normalize an iHS score file across frequency bins -->
+        <test expect_num_outputs="2">
+            <conditional name="statistic">
+                <param name="statistic_selector" value="ihs"/>
+            </conditional>
+            <param name="input_files" value="p1.ihs.out" ftype="tabular"/>
+            <param name="bins" value="100"/>
+            <output_collection name="norm_out" type="list" count="1">
+                <element name="0" ftype="tabular">
+                    <assert_contents>
+                        <has_text text="norm_ihs"/>
+                        <has_text text="crit"/>
+                        <has_n_columns n="9"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output name="norm_log" ftype="txt">
+                <assert_contents>
+                    <has_text text="bin"/>
+                    <has_text text="mean"/>
+                    <has_text text="variance"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- Normalize two iHS files jointly and compute bp windows -->
+        <test expect_num_outputs="3">
+            <conditional name="statistic">
+                <param name="statistic_selector" value="ihs"/>
+            </conditional>
+            <param name="input_files" value="p1.ihs.out,p1.ihs.out" ftype="tabular"/>
+            <param name="bins" value="100"/>
+            <param name="bp_win" value="true"/>
+            <param name="winsize" value="100000"/>
+            <param name="min_snps" value="1"/>
+            <output_collection name="norm_out" type="list" count="2">
+                <element name="0" ftype="tabular">
+                    <assert_contents>
+                        <has_text text="norm_ihs"/>
+                    </assert_contents>
+                </element>
+                <element name="1" ftype="tabular">
+                    <assert_contents>
+                        <has_text text="norm_ihs"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output_collection name="windows_out" type="list" count="2">
+                <element name="0" ftype="tabular">
+                    <assert_contents>
+                        <has_text text="frac_extreme"/>
+                        <has_n_columns n="7"/>
+                    </assert_contents>
+                </element>
+                <element name="1" ftype="tabular">
+                    <assert_contents>
+                        <has_text text="frac_extreme"/>
+                    </assert_contents>
+                </element>
+            </output_collection>
+            <output name="norm_log" ftype="txt">
+                <assert_contents>
+                    <has_text text="bin"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+Normalizes selscan scores and identifies genomic windows with an excess of
+extreme scores. This is the downstream companion to the **selscan** tool.
+
+For iHS and nSL the scores are standardized within allele-frequency bins, which
+removes the frequency dependence of the raw scores. For XP-EHH, XP-nSL and
+iHH12 the scores are standardized globally. Windows are then grouped into
+quantile bins by their SNP count so that windows with different SNP densities
+can be compared.
+
+-----
+
+**Inputs**
+
+- One or more unnormalized selscan score files for the *same* statistic. When
+  several files are given they are normalized jointly, which is the recommended
+  way to compare populations.
+
+-----
+
+**Outputs**
+
+- A normalized score table per input file, with the additional columns
+  `norm_<statistic>` and `crit` (`crit` is 1 for extreme scores).
+- A window table per input file when *Compute bp-based windows* is selected,
+  listing the fraction of extreme scores and the empirical percentile of each
+  window.
+- A log file with the per-bin mean and variance used for normalization.
+
+-----
+
+**Notes**
+
+- The number of frequency bins only applies to iHS and nSL; XP-EHH, XP-nSL and
+  iHH12 are normalized globally.
+- Use *Critical percentile* instead of *Critical value* to flag a fixed fraction
+  of the most extreme scores rather than a fixed number of standard deviations.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

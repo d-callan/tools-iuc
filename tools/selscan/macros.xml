@@ -1,0 +1,51 @@
+<macros>
+    <token name="@TOOL_VERSION@">3.0.1</token>
+    <token name="@VERSION_SUFFIX@">0</token>
+    <token name="@PROFILE@">24.1</token>
+    <xml name="bio_tools">
+        <xrefs>
+            <xref type="bio.tools">selscan</xref>
+        </xrefs>
+    </xml>
+    <xml name="requirements">
+        <requirements>
+            <!-- The bioconda selscan recipe already declares gsl and zlib as run
+                 dependencies, so they are pulled in transitively and are not
+                 pinned here (pinning them risks unsatisfiable environments). -->
+            <requirement type="package" version="@TOOL_VERSION@">selscan</requirement>
+        </requirements>
+    </xml>
+    <xml name="version_command">
+        <version_command><![CDATA[selscan 2>&1 | grep -o 'selscan v[0-9.]*' | head -1]]></version_command>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="doi">10.1093/molbev/msu211</citation>
+            <citation type="doi">10.1093/bioinformatics/btae006</citation>
+            <citation type="doi">10.1093/molbev/msaf275</citation>
+            <citation type="doi">10.1002/evl3.232</citation>
+        </citations>
+    </xml>
+    <token name="@ATTRIBUTION@"><![CDATA[
+**Attribution**
+
+This Galaxy tool wraps `selscan <https://github.com/szpiech/selscan>`_, developed by
+Zachary A. Szpiech and colleagues. See the `selscan manual
+<https://github.com/szpiech/selscan>`_ for the full description of every option.
+    ]]></token>
+    <token name="@SELSCAN_MANUAL@">https://github.com/szpiech/selscan</token>
+    <!-- Shared input model: selscan accepts VCF, HAP, TPED or THAP genotype data.
+         The map file is required for every format except nSL/XP-nSL on VCF,
+         where the physical position can be taken from the VCF itself. -->
+    <xml name="input_format">
+        <param name="input_format" type="select" label="Input format" help="Format of the genotype data. A map file is required for all formats except nSL/XP-nSL on VCF.">
+            <option value="vcf">VCF</option>
+            <option value="hap">HAP (one row per haplotype, one column per variant)</option>
+            <option value="tped">TPED</option>
+            <option value="thap">THAP (IMPUTE hap format)</option>
+        </param>
+    </xml>
+    <xml name="map_file">
+        <param name="map_file" argument="--map" type="data" format="tabular" optional="true" label="Map file" help="One row per variant site, formatted as: chromosome, locus ID, genetic position, physical position. Required for HAP/TPED/THAP input and for VCF input unless the statistic is nSL or XP-nSL (or a physical map is used)."/>
+    </xml>
+</macros>

@@ -1,0 +1,95 @@
+# Agent Notes
+
+## Generation notes
+
+## selscan wrapper — notes for reviewers
+
+**Scope decisions (per maintainer feedback in the plan):**
+- Two XMLs only: `selscan.xml` (main scan) and `selscan_norm.xml` (`selscan norm`).
+- `--ehh`, `--ehhs`, `--ehh12` and `--pi` are deliberately NOT exposed. `--ehh12`
+  segfaults (exit 139) reproducibly on the upstream `example.hap`/`example.map`
+  data even though it writes a partial output file, and `--ehh`/`--ehhs` emit one
+  file per requested locus/position which cannot be declared statically in Galaxy.
+  `--pi` was excluded per maintainer instruction (long-standing upstream issues).
+- `--multi-param` (JSON batch mode) is not exposed: it produces `*.pconfigN`
+  outputs with a dynamic count. `--multi-chr` IS exposed as an optional text field.
+
+**Verified against the bioconda `selscan=3.0.1` binary:**
+- Output naming: `<out>.<stat>.out` and `<out>.<stat>.log`; with `--alt` the score
+  file becomes `<out>.<stat>.alt.out` (the log name is unchanged). The wrapper
+  handles both.
+- v3.0 output headers (leading `chr` column + header row):
+  iHS/nSL `chr id pos freq ihh1 ihh0 ihs|nsl` (7 cols);
+  XP-EHH/XP-nSL `chr id pos gpos p1 ihh1 p2 ihh2 xpehh|xpnsl` (9 cols);
+  iHH12 `chr id pos p1 ihh12` (5 cols);
+  `--ihs-detail` adds 4 columns (11 total).
+- `norm` output naming: `<input>.<bins>bins.norm` for iHS/nSL, `<input>.norm` for
+  XP-EHH/XP-nSL/iHH12; window files `<normed>.<winsize/1000>kb.windows`.
+- Gene annotation table is written as `<genefile>.<stat>.genetable`
+  (verified: `genes.bed.ihs.genetable`). `norm` also writes an undeclared
+  `<normed>.ann` file which Galaxy ignores.
+- Map requirement: `--map` is required for HAP/TPED/THAP and for VCF unless the
+  statistic is nSL/XP-nSL or `--pmap` is given. The wrapper leaves `map_file`
+  optional and documents the rule rather than hard-enforcing it, because the
+  requirement depends on the statistic *and* the `--pmap` flag.
+
+**Test data:** taken from the upstream `example/` directory (p1.vcf.gz, p2.vcf.gz,
+example.map, example.hap). `test-data/p1.ihs.out` is a pre-computed iHS output
+used as input for the `selscan_norm` tests; it was generated with the bioconda
+binary and tracked as a binary-safe generated file.
+
+**Known caveat:** the GTF branch of gene annotation (`--gene-gtf`) is wired up
+symmetrically to the verified BED branch but was not exercised in a test run
+(no GTF test file was available). The output filename for GTF is assumed to be
+`genes.gtf.<stat>.genetable` by analogy with BED.
+## Round 2 fixes (all tests now pass)
+
+**Test data changed from `.vcf.gz` to plain `.vcf`.** The upstream `p1.vcf.gz` /
+`p2.vcf.gz` are *plain gzip*, not bgzip. Declaring them as `vcf_bgzip` made
+Galaxy hang while trying to build a tabix index, which caused `planemo test` to
+time out with no useful error. The test data are now uncompressed `p1.vcf` /
+`p2.vcf` (ftype `vcf`), and the tool accepts `format="vcf,tabular"`.
+
+**`example.map` is NOT compatible with `p1.vcf`.** The upstream example map has
+8324 loci while `p1.vcf` has 1466 after MAF filtering, so `--ihs --vcf p1.vcf
+--map example.map` fails with "Expected 1466 loci in map file but found 5874".
+The VCF tests therefore use `--pmap` (physical map from the VCF) instead of a
+map file. The HAP tests use a trimmed `example_small.hap` / `example_small.map`
+pair (1500 loci, first 1500 columns of the upstream files) which are mutually
+consistent.
+
+**Collection discovery:** `discover_datasets` with a custom regex plus a
+`format="tabular"` attribute did not work — Galaxy derived the extension from
+the file name on disk. The working approach is to `mv` each output to
+`<dir>/<n>.tabular` and use `pattern="__name_and_ext__"`. Note that
+`__name_and_ext__` picks up the extension from the filename, so the files must
+literally end in `.tabular`.
+
+**Output filters:** `<filter>bp_win</filter>` on the `windows_out` collection
+works, but a filter referencing a nested conditional value
+(`gene_annotation['gene_source'] != 'none'`) caused the whole job to fail. Gene
+annotation (`--gene-bed` / `--gene-gtf` / `--gene-target` / `--gene-background`)
+is therefore NOT exposed in this version; it is a candidate follow-up.
+
+**Requirements:** only `selscan` is pinned. Pinning `gsl`/`zlib` explicitly
+risked unsatisfiable environments; the bioconda recipe already declares them as
+run dependencies so they are pulled in transitively.
+## Final state (round 3)
+
+All files written, `planemo lint` clean (no warnings), `planemo test` → **all 7 tests pass**.
+
+**Files in the PR:**
+- `selscan.xml` — main scan (iHS, nSL, XP-EHH, XP-nSL, iHH12), 5 tests
+- `selscan_norm.xml` — `selscan norm` normalization + windows, 2 tests
+- `macros.xml` — shared tokens/macros
+- `.shed.yml` — owner `d-callan`, categories Sequence Analysis / Statistics / Variant Analysis
+- `test-data/`: `p1.vcf`, `p2.vcf`, `example_small.hap`, `example_small.map`, `p1.ihs.out`
+
+**Cleanup note:** earlier `run_in_conda` experiments left ~19 stray `*.ihs.out` /
+`*.ihs.log` files in `test-data/`. These have all been deleted. If a future round
+runs `run_in_conda` with `--out test-data/...`, remember to delete the outputs
+afterwards or they will be flagged as untracked files.
+
+**Deliberately not exposed** (documented in the tool help and in earlier notes):
+`--ehh`, `--ehhs`, `--ehh12`, `--pi`, `--multi-param`, and the gene-annotation
+options of `norm` (`--gene-bed`/`--gene-gtf`/`--gene-target`/`--gene-background`).

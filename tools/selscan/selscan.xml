@@ -1,0 +1,266 @@
+<tool id="selscan" name="selscan" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>EHH-based scans for positive selection (iHS, nSL, XP-EHH, XP-nSL, iHH12)</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="bio_tools"/>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+#set $stat = str($statistic.statistic_selector)
+selscan
+--threads \${GALAXY_SLOTS:-1}
+--${stat}
+--${input_format} '$input_file'
+#if $stat in ('xpehh', 'xpnsl'):
+    #if $input_format == 'hap':
+        --ref '$statistic.ref_input_file'
+    #else:
+        --${input_format}-ref '$statistic.ref_input_file'
+    #end if
+#end if
+#if $map_file:
+    --map '$map_file'
+#end if
+--maf $maf
+--cutoff $cutoff
+--max-gap $max_gap
+--gap-scale $gap_scale
+--max-extend $max_extend
+--max-extend-nsl $max_extend_nsl
+$pmap
+$alt
+$wagh
+$trunc_ok
+$keep_low_freq
+$unphased
+#if $stat == 'ihs':
+    $statistic.ihs_detail
+#end if
+$filter_vcf
+#if $multi_chr:
+    --multi-chr '$multi_chr'
+#end if
+--out outfile
+#if $alt:
+    && mv outfile.${stat}.alt.out '$scores'
+#else:
+    && mv outfile.${stat}.out '$scores'
+#end if
+&& mv outfile.${stat}.log '$log'
+    ]]></command>
+    <inputs>
+        <conditional name="statistic">
+            <param name="statistic_selector" type="select" label="Statistic to calculate">
+                <option value="ihs">iHS - integrated haplotype score (single population)</option>
+                <option value="nsl">nSL - number of segregating sites by length (single population)</option>
+                <option value="xpehh">XP-EHH - cross-population EHH (two populations)</option>
+                <option value="xpnsl">XP-nSL - cross-population nSL (two populations)</option>
+                <option value="ihh12">iHH12 - integrated haplotype homozygosity on derived alleles (single population)</option>
+            </param>
+            <when value="ihs">
+                <param argument="--ihs-detail" type="boolean" truevalue="--ihs-detail" falsevalue="" checked="false" label="Write detailed iHH scores" help="Additionally write the left and right iHH scores for the '1' and '0' alleles."/>
+            </when>
+            <when value="nsl"/>
+            <when value="xpehh">
+                <param name="ref_input_file" type="data" format="vcf,tabular" label="Reference population file" help="Genotype data for the reference population. Must use the same format and contain the same loci as the query population."/>
+            </when>
+            <when value="xpnsl">
+                <param name="ref_input_file" type="data" format="vcf,tabular" label="Reference population file" help="Genotype data for the reference population. Must use the same format and contain the same loci as the query population."/>
+            </when>
+            <when value="ihh12"/>
+        </conditional>
+        <expand macro="input_format"/>
+        <param name="input_file" type="data" format="vcf,tabular" label="Genotype data" help="Phased genotype data coded 0/1. Use the unphased option for multilocus genotypes."/>
+        <expand macro="map_file"/>
+        <section name="advanced" title="Advanced options" expanded="false">
+            <param argument="--maf" type="float" value="0.05" min="0" max="1" label="Minor allele frequency cutoff" help="Sites with a MAF below this value are not used as core SNPs."/>
+            <param argument="--cutoff" type="float" value="0.05" min="0" max="1" label="EHH decay cutoff" help="EHH decay cutoff used to truncate the integration of the decay curve."/>
+            <param argument="--max-gap" type="integer" value="200000" min="1" label="Maximum gap between SNPs (bp)" help="Maximum allowed gap in bp between two SNPs."/>
+            <param argument="--gap-scale" type="integer" value="20000" min="1" label="Gap scale (bp)" help="If a gap between two SNPs is larger than this value but smaller than the maximum gap, the genetic distance is scaled by gap-scale/gap."/>
+            <param argument="--max-extend" type="integer" value="1000000" label="Maximum EHH extension (bp)" help="Maximum distance an EHH decay curve is allowed to extend from the core. Set to 0 or less for no restriction."/>
+            <param argument="--max-extend-nsl" type="integer" value="100" label="Maximum nSL extension (number of SNPs)" help="Maximum distance an nSL haplotype is allowed to extend from the core. Set to 0 or less for no restriction."/>
+            <param argument="--pmap" type="boolean" truevalue="--pmap" falsevalue="" checked="false" label="Use a physical map" help="Use physical positions instead of a genetic map. For VCF input this removes the need for a map file."/>
+            <param argument="--alt" type="boolean" truevalue="--alt" falsevalue="" checked="false" label="Use squared haplotype frequencies" help="Calculate homozygosity from the sum of squared haplotype frequencies in the observed data instead of using binomial coefficients."/>
+            <param argument="--wagh" type="boolean" truevalue="--wagh" falsevalue="" checked="false" label="Use the Wagh et al. XP-EHH definition" help="Calculate XP-EHH using the definition of EHH that separates core SNP alleles in the denominator. Not compatible with unphased data."/>
+            <param argument="--trunc-ok" type="boolean" truevalue="--trunc-ok" falsevalue="" checked="false" label="Accept truncated EHH curves" help="If an EHH decay reaches the end of a sequence before reaching the cutoff, integrate the curve anyway instead of discarding the score for that core."/>
+            <param argument="--keep-low-freq" type="boolean" truevalue="--keep-low-freq" falsevalue="" checked="false" label="Keep low frequency variants" help="Include low frequency variants in the construction of the haplotypes. By default they are removed."/>
+            <param argument="--unphased" type="boolean" truevalue="--unphased" falsevalue="" checked="false" label="Use unphased multilocus genotypes" help="Use multilocus genotypes instead of phased haplotypes. Not compatible with iHH12 or the Wagh XP-EHH definition."/>
+            <param argument="--filter-vcf" type="boolean" truevalue="--filter-vcf" falsevalue="" checked="false" label="Filter VCF to biallelic SNPs" help="Keep only biallelic SNPs with canonical alleles (A, C, G, T); excludes indels, MNPs and ambiguous bases."/>
+            <param argument="--multi-chr" type="text" optional="true" label="Chromosomes to include" help="Comma-separated list of chromosomes to include in the analysis. Leave empty to use all chromosomes.">
+                <validator type="regex" message="A comma-separated list of chromosome names is required">^[^,\s]+(,[^,\s]+)*$</validator>
+            </param>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="scores" format="tabular" label="${tool.name} ${statistic.statistic_selector} scores on ${on_string}"/>
+        <data name="log" format="txt" label="${tool.name} ${statistic.statistic_selector} log on ${on_string}"/>
+    </outputs>
+    <tests>
+        <!-- iHS from VCF using a physical map -->
+        <test expect_num_outputs="2">
+            <conditional name="statistic">
+                <param name="statistic_selector" value="ihs"/>
+            </conditional>
+            <param name="input_format" value="vcf"/>
+            <param name="input_file" value="p1.vcf" ftype="vcf"/>
+            <section name="advanced">
+                <param name="pmap" value="true"/>
+            </section>
+            <output name="scores" ftype="tabular">
+                <assert_contents>
+                    <has_text text="ihh1"/>
+                    <has_text text="ihh0"/>
+                    <has_text text="ihs"/>
+                    <has_n_lines n="564"/>
+                    <has_n_columns n="7"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="txt">
+                <assert_contents>
+                    <has_text text="selscan v3.0.1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- nSL from VCF without a map file -->
+        <test expect_num_outputs="2">
+            <conditional name="statistic">
+                <param name="statistic_selector" value="nsl"/>
+            </conditional>
+            <param name="input_format" value="vcf"/>
+            <param name="input_file" value="p1.vcf" ftype="vcf"/>
+            <output name="scores" ftype="tabular">
+                <assert_contents>
+                    <has_text text="nsl"/>
+                    <has_n_lines n="848"/>
+                    <has_n_columns n="7"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="txt">
+                <assert_contents>
+                    <has_text text="selscan v3.0.1"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <not_has_text text="--map"/>
+            </assert_command>
+        </test>
+        <!-- XP-EHH from two VCFs using a physical map -->
+        <test expect_num_outputs="2">
+            <conditional name="statistic">
+                <param name="statistic_selector" value="xpehh"/>
+                <param name="ref_input_file" value="p2.vcf" ftype="vcf"/>
+            </conditional>
+            <param name="input_format" value="vcf"/>
+            <param name="input_file" value="p1.vcf" ftype="vcf"/>
+            <section name="advanced">
+                <param name="pmap" value="true"/>
+            </section>
+            <output name="scores" ftype="tabular">
+                <assert_contents>
+                    <has_text text="xpehh"/>
+                    <has_n_columns n="9"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="txt">
+                <assert_contents>
+                    <has_text text="selscan v3.0.1"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="--vcf-ref"/>
+            </assert_command>
+        </test>
+        <!-- iHH12 from HAP + map -->
+        <test expect_num_outputs="2">
+            <conditional name="statistic">
+                <param name="statistic_selector" value="ihh12"/>
+            </conditional>
+            <param name="input_format" value="hap"/>
+            <param name="input_file" value="example_small.hap" ftype="tabular"/>
+            <param name="map_file" value="example_small.map"/>
+            <output name="scores" ftype="tabular">
+                <assert_contents>
+                    <has_text text="ihh12"/>
+                    <has_n_columns n="5"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="txt">
+                <assert_contents>
+                    <has_text text="selscan v3.0.1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- iHS with detailed iHH columns from HAP + map -->
+        <test expect_num_outputs="2">
+            <conditional name="statistic">
+                <param name="statistic_selector" value="ihs"/>
+                <param name="ihs_detail" value="true"/>
+            </conditional>
+            <param name="input_format" value="hap"/>
+            <param name="input_file" value="example_small.hap" ftype="tabular"/>
+            <param name="map_file" value="example_small.map"/>
+            <output name="scores" ftype="tabular">
+                <assert_contents>
+                    <has_text text="ihh1_left"/>
+                    <has_text text="ihh0_right"/>
+                    <has_n_columns n="11"/>
+                </assert_contents>
+            </output>
+            <output name="log" ftype="txt">
+                <assert_contents>
+                    <has_text text="selscan v3.0.1"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+selscan calculates EHH-based statistics for detecting positive selection from
+genotype data. This wrapper exposes the single-population statistics **iHS**,
+**nSL** and **iHH12**, and the cross-population statistics **XP-EHH** and
+**XP-nSL**.
+
+Data must be phased and coded 0/1 (use the *unphased* option for multilocus
+genotypes). selscan is agnostic to ancestral/derived coding, so the
+unstandardized iHS/nSL values are log10(iHH1/iHH0) for the coding you supply.
+Run the tool separately for each chromosome and, for the cross-population
+statistics, for each population pair.
+
+-----
+
+**Inputs**
+
+- Genotype data in VCF, HAP, TPED or THAP format.
+- A map file (chromosome, locus ID, genetic position, physical position) is
+  required for HAP/TPED/THAP input and for VCF input unless the statistic is
+  nSL or XP-nSL, or a physical map is requested.
+- XP-EHH and XP-nSL additionally require a reference population file with the
+  same loci as the query population.
+
+-----
+
+**Outputs**
+
+- A per-statistic score table (`*.ihs.out`, `*.xpehh.out`, ...) with a header
+  row and a leading chromosome column.
+- A log file recording the parameters and progress of the run.
+
+Use the companion **selscan norm** tool to normalize scores across frequency
+bins, compute extreme-score windows and annotate genes.
+
+-----
+
+**Notes**
+
+- `--ihs-detail` adds left/right iHH columns and is only available for iHS.
+- `--wagh` and `--unphased` are mutually exclusive, and `--unphased` cannot be
+  combined with iHH12.
+- The number of threads is taken from the Galaxy job configuration
+  (`GALAXY_SLOTS`); it is not exposed as a tool parameter.
+
+@ATTRIBUTION@
+    ]]></help>
+    <expand macro="citations"/>
+</tool>
