@@ -12,6 +12,14 @@
     </xml>
     <xml name="citations">
         <citations>
+            <!--
+                The 10.64898 prefix is openRxiv's (bioRxiv/medRxiv moved off
+                10.1101), so it is not a typo. Verified against Crossref: this
+                DOI resolves to "Clean Breaks: Attention Force Field
+                Deconvolution of Recombination Across Sequence Manifolds"
+                (Kosakovsky Pond et al., bioRxiv 2026), which is the RhizAeon
+                preprint.
+            -->
             <citation type="doi">10.64898/2026.10.19.760237</citation>
         </citations>
     </xml>

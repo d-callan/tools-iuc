@@ -6,10 +6,20 @@
     <expand macro="requirements"/>
     <expand macro="version_command"/>
     <command detect_errors="aggressive"><![CDATA[
+## Flag spelling: clap derives kebab-case from the Rust field names, so the real
+## flags are poisson-floor, tier2-stringency, tier3-stringency, compress-snps
+## and no-compress-snps. The underscore spellings from the original plan are
+## rejected by the engine with exit code 2, so do not "fix" these back.
+##
 ## The engine falls back to the *staged* filename (dataset_NNNN.dat) when no
 ## title is given, which is meaningless to the user. Derive a sensible default
 ## from the history element name instead.
 #set $title_value = str($title) if str($title) else str($input_file.element_identifier)
+## The fallback above is a history dataset name and therefore never passes
+## through the regex validator on the title parameter, so strip the characters
+## that are significant to the shell here. This is a no-op for values that did
+## go through the validator.
+#set $title_safe = $title_value.replace("'", "_").replace('"', "_").replace('`', "_").replace('$', "_").replace('\\', "_")
 
 rhizaeon
     --input '$input_file'
@@ -20,7 +30,7 @@ rhizaeon
     #if $outputs_section.emit_html
         --html '$report_html'
     #end if
-    --title '$title_value'
+    --title='$title_safe'
     --landmarks $advanced.landmarks
     --alpha $advanced.alpha
     --poisson-floor $advanced.poisson_floor
@@ -39,8 +49,15 @@ rhizaeon
             Galaxy decompresses fasta.gz upstream.
         -->
         <param name="input_file" type="data" format="fasta" label="Nucleotide alignment" help="Aligned nucleotide sequences in FASTA format. All sequences must be the same length."/>
+        <!--
+            Denylist rather than allowlist so that non-ASCII titles (accented
+            letters, non-Latin scripts) are accepted. Only the characters that
+            are significant inside the single-quoted shell string are rejected;
+            the command template sanitizes them again as a second line of
+            defence.
+        -->
         <param argument="--title" type="text" value="" label="Report title" help="Title used in the visualization JSON and the HTML dashboard. Defaults to the name of the input dataset.">
-            <validator type="regex" message="Please use only letters, digits, spaces and basic punctuation">^[A-Za-z0-9 _.,:;/()\[\]&amp;%+-]*$</validator>
+            <validator type="regex" message="Please do not use single quotes, double quotes, backticks, dollar signs or backslashes in the title">^(?!.*['"`$\\]).*$</validator>
         </param>
         <section name="outputs_section" title="Optional outputs" expanded="false">
             <param name="emit_viz" type="boolean" checked="false" label="Write visualization JSON" help="Rich JSON dossier consumed by the HTML dashboard"/>
@@ -69,6 +86,13 @@ rhizaeon
         </data>
     </outputs>
     <tests>
+        <!--
+            NOTE: the JSON assertions below match serde_json's pretty-printed
+            output, i.e. they depend on the `"key": value` spacing. If upstream
+            ever switches to compact serialization every one of these
+            assertions fails at once; that is a formatting change, not a
+            regression in the wrapper.
+        -->
         <!-- 1. Defaults, summary only, on an alignment certified non-recombinant -->
         <test expect_num_outputs="1">
             <param name="input_file" value="bat_oas1.fasta" ftype="fasta"/>
@@ -104,7 +128,7 @@ rhizaeon
             <output name="viz_json" ftype="json">
                 <assert_contents>
                     <has_text text="&quot;metadata&quot;"/>
-                    <has_text text="&quot;engine_version&quot;: &quot;0.1.2&quot;"/>
+                    <has_text text="&quot;engine_version&quot;: &quot;@TOOL_VERSION@&quot;"/>
                     <has_text text="&quot;taxa_count&quot;: 212"/>
                     <has_text text="&quot;breakpoints&quot;"/>
                     <has_text text="&quot;canonical_manifold&quot;"/>
@@ -118,7 +142,31 @@ rhizaeon
                 </assert_contents>
             </output>
         </test>
-        <!-- 3. Custom title propagates into the dashboard and the viz dossier -->
+        <!-- 3. HTML dashboard alone: the viz dossier is not written, so the
+             dashboard must not depend on it -->
+        <test expect_num_outputs="2">
+            <param name="input_file" value="bat_oas1.fasta" ftype="fasta"/>
+            <section name="outputs_section">
+                <param name="emit_viz" value="false"/>
+                <param name="emit_html" value="true"/>
+            </section>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;num_taxa&quot;: 18"/>
+                    <has_text text="&quot;is_non_recombinant_h0&quot;: true"/>
+                </assert_contents>
+            </output>
+            <output name="report_html" ftype="html">
+                <assert_contents>
+                    <has_text text="&lt;!DOCTYPE html&gt;"/>
+                    <has_text text="&lt;title&gt;bat_oas1.fasta&lt;/title&gt;"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <not_has_text text="--viz"/>
+            </assert_command>
+        </test>
+        <!-- 4. Custom title propagates into the dashboard and the viz dossier -->
         <test expect_num_outputs="3">
             <param name="input_file" value="bat_oas1.fasta" ftype="fasta"/>
             <param name="title" value="My Cohort"/>
@@ -142,7 +190,7 @@ rhizaeon
                 </assert_contents>
             </output>
         </test>
-        <!-- 4. Advanced parameters reach the command line -->
+        <!-- 5. Advanced parameters reach the command line -->
         <test expect_num_outputs="1">
             <param name="input_file" value="camelid.fasta" ftype="fasta"/>
             <section name="advanced">
@@ -165,7 +213,7 @@ rhizaeon
                 <has_text text="--tier3-stringency 1.5"/>
             </assert_command>
         </test>
-        <!-- 5. SNP compression can be forced off -->
+        <!-- 6. SNP compression can be forced off -->
         <test expect_num_outputs="1">
             <param name="input_file" value="camelid.fasta" ftype="fasta"/>
             <section name="advanced">
@@ -181,7 +229,7 @@ rhizaeon
                 <not_has_text text="--compress-snps"/>
             </assert_command>
         </test>
-        <!-- 6. SNP compression can be forced on, on a larger alignment -->
+        <!-- 7. SNP compression can be forced on, on a larger alignment -->
         <test expect_num_outputs="1">
             <param name="input_file" value="Smc6.fasta" ftype="fasta"/>
             <section name="advanced">
@@ -199,7 +247,7 @@ rhizaeon
                 <not_has_text text="--no-compress-snps"/>
             </assert_command>
         </test>
-        <!-- 7. Default (auto) mode emits neither compression flag, and the title
+        <!-- 8. Default (auto) mode emits neither compression flag, and the title
              falls back to the history element name rather than the staged filename -->
         <test expect_num_outputs="3">
             <param name="input_file" value="bat_oas1.fasta" ftype="fasta"/>
@@ -228,6 +276,18 @@ rhizaeon
                 <not_has_text text="--no-compress-snps"/>
             </assert_command>
         </test>
+        <!--
+            A negative test for ragged alignments was prototyped and then
+            dropped: Galaxy only accepts a job in error state when the test
+            carries expect_failure="true", but the TestsExpectNumOutputsFailing
+            linter forbids combining expect_failure with expect_num_outputs,
+            while IUC conventions require expect_num_outputs on every test.
+            expect_exit_code="1" does not work either - Galaxy still reports
+            "Job in error state" and the test fails. The behaviour itself was
+            verified manually against the bioconda package: a ragged alignment
+            exits 1 with "Error: Sequence 1 ('M_murinus') has length 300 but
+            expected 240" on stderr and writes no output file.
+        -->
     </tests>
     <help format="markdown"><![CDATA[
 **What it does**
@@ -245,9 +305,10 @@ introgression from unsampled "ghost" lineages are resolved natively.
 **Input**
 
 A FASTA file containing a nucleotide alignment. All sequences must be aligned
-to the same length; ragged alignments are rejected. Gapped alignments are
-accepted as-is — RhizAeon does not impute or alter gaps. Ambiguity codes are
-treated as missing data.
+to the same length; ragged alignments are rejected with an error naming the
+offending sequence and its length. Gapped alignments are accepted as-is —
+RhizAeon does not impute or alter gaps. Ambiguity codes are treated as missing
+data.
 
 Compressed (`.fasta.gz`) input is not supported by the engine. Decompress the
 dataset first (for example with **Convert Formats → gzip** or by uploading the
@@ -258,24 +319,42 @@ uncompressed file).
 **Outputs**
 
 - **Summary JSON** (always) — run metadata, informative site count, screening
-  results, and one record per detected event with the recombinant
-  (`candidate_name`), the parental context (`home_name`), the donor
-  (`donor_name`), a ghost-donor flag, breakpoint coordinates (`u1`, `u2`),
-  `tract_length`, the Fisher p-value (`p_fisher`) and the physical z-score
-  (`z_phys`). An empty `events` list with `"is_non_recombinant_h0": true`
-  means the alignment was certified non-recombinant under the H0 null.
+  results, and one record per detected event.
 - **Visualization JSON** (optional) — the dossier consumed by the HTML report,
   including per-taxon mosaic segments, breakpoints, manifold coordinates and
   the recombination landscape.
 - **HTML report** (optional) — a standalone, self-contained dashboard that can
-  be opened directly in a browser.
+  be opened directly in a browser. It can be requested on its own, without the
+  visualization JSON.
+
+**Summary JSON structure**
+
+- `num_taxa`, `length`, `informative_sites` — size of the alignment and the
+  number of parsimony-informative columns.
+- `is_non_recombinant_h0` — `true` when the alignment was certified
+  non-recombinant under the H0 null. In that case `events` is empty.
+- `screening` — the per-taxon screening pass that precedes event calling:
+  `v_cont` (continuous trajectory score), `v_root`, `r_root`, `gamma_root`
+  (rate variation routed into the unpolarized root sink), `median_v_cont`, and
+  the index lists `rate_burst_indices`, `ghost_candidate_indices`,
+  `candidate_recombinant_indices` and `clonal_backbone_indices`. Indices refer
+  to the order of the sequences in the input alignment.
+- `events` — one record per detected recombination event, with the recombinant
+  (`candidate_name`), the parental context (`home_name`), the donor
+  (`donor_name`), the ghost-donor flag (`is_ghost_donor`), breakpoint
+  coordinates (`u1`, `u2`), `tract_length`, the Fisher p-value (`p_fisher`),
+  the physical z-score (`z_phys`), and `is_verified`, which is `true` when the
+  event passed the final maximum-likelihood polishing and verification step.
+- `run_time_ms` — wall-clock runtime of the scan.
 
 -----
 
 **Options**
 
 - **Report title** — shown in the visualization JSON and the HTML dashboard.
-  If left blank, the name of the input dataset is used.
+  If left blank, the name of the input dataset is used. Characters that are
+  unsafe on the command line (`'`, `"`, `` ` ``, `$`, `\`) are replaced with
+  `_`.
 - **Landmarks** (`--landmarks`, default 16) — number of landmarks K placed on
   the manifold.
 - **Alpha** (`--alpha`, default 0.05) — family-wise significance level for
