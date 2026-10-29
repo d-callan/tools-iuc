@@ -1,0 +1,20 @@
+---
+name: rhizaeon
+owner: iuc
+description: Fast recombination detection in nucleotide alignments
+homepage_url: https://github.com/veg/HyphAeon
+long_description: |
+  RhizAeon detects recombination (mosaic sequence tracts) in a nucleotide
+  alignment without reconstructing a guide tree. Instead of enumerating all
+  O(N^3) sequence triplets like 3SEQ or RDP, it projects the alignment onto a
+  continuous metric manifold using prefix distance tensors and deconvolves
+  candidate breakpoints with a physical attention force field. Runtime scales
+  linearly with cohort size, and multi-parent mosaics and introgression from
+  unsampled "ghost" lineages are resolved natively. The tool emits a summary
+  JSON dossier, an optional visualization JSON, and an optional standalone
+  HTML dashboard.
+remote_repository_url: https://github.com/galaxyproject/tools-iuc/tree/main/tools/rhizaeon
+categories:
+  - Sequence Analysis
+  - Phylogenetics
+type: unrestricted
