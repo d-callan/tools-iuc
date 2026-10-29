@@ -1,0 +1,301 @@
+<tool id="rhizaeon" name="RhizAeon" version="@TOOL_VERSION@+galaxy@VERSION_SUFFIX@" profile="@PROFILE@">
+    <description>detect recombination in a nucleotide alignment</description>
+    <macros>
+        <import>macros.xml</import>
+    </macros>
+    <expand macro="requirements"/>
+    <expand macro="version_command"/>
+    <command detect_errors="aggressive"><![CDATA[
+## The engine falls back to the *staged* filename (dataset_NNNN.dat) when no
+## title is given, which is meaningless to the user. Derive a sensible default
+## from the history element name instead.
+#set $title_value = str($title) if str($title) else str($input_file.element_identifier)
+
+rhizaeon
+    --input '$input_file'
+    --output '$summary_json'
+    #if $outputs_section.emit_viz
+        --viz '$viz_json'
+    #end if
+    #if $outputs_section.emit_html
+        --html '$report_html'
+    #end if
+    --title '$title_value'
+    --landmarks $advanced.landmarks
+    --alpha $advanced.alpha
+    --poisson-floor $advanced.poisson_floor
+    --tier2-stringency $advanced.tier2_stringency
+    --tier3-stringency $advanced.tier3_stringency
+    #if $advanced.snp_compression == 'on'
+        --compress-snps
+    #elif $advanced.snp_compression == 'off'
+        --no-compress-snps
+    #end if
+    ]]></command>
+    <inputs>
+        <!--
+            FASTA only: the engine reads the alignment with fs::read_to_string,
+            so a gzipped input fails with "stream did not contain valid UTF-8".
+            Galaxy decompresses fasta.gz upstream.
+        -->
+        <param name="input_file" type="data" format="fasta" label="Nucleotide alignment" help="Aligned nucleotide sequences in FASTA format. All sequences must be the same length."/>
+        <param argument="--title" type="text" value="" label="Report title" help="Title used in the visualization JSON and the HTML dashboard. Defaults to the name of the input dataset.">
+            <validator type="regex" message="Please use only letters, digits, spaces and basic punctuation">^[A-Za-z0-9 _.,:;/()\[\]&amp;%+-]*$</validator>
+        </param>
+        <section name="outputs_section" title="Optional outputs" expanded="false">
+            <param name="emit_viz" type="boolean" checked="false" label="Write visualization JSON" help="Rich JSON dossier consumed by the HTML dashboard"/>
+            <param name="emit_html" type="boolean" checked="false" label="Write standalone HTML dashboard" help="Self-contained interactive report"/>
+        </section>
+        <section name="advanced" title="Advanced options" expanded="false">
+            <param argument="--landmarks" type="integer" min="1" value="16" label="Landmarks (K)" help="Number of landmarks placed on the manifold"/>
+            <param argument="--alpha" type="float" min="0" max="1" value="0.05" label="Significance level (alpha)" help="Family-wise significance level used for event calling"/>
+            <param argument="--poisson-floor" type="integer" min="0" value="3" label="Poisson floor" help="Minimum number of supporting informative sites for a candidate tract"/>
+            <param argument="--tier2-stringency" type="float" min="0" value="1.0" label="Tier-2 stringency" help="Multiplier on the trajectory and donor-attribution gate. Values above 1 are stricter, below 1 more permissive."/>
+            <param argument="--tier3-stringency" type="float" min="0" value="1.0" label="Tier-3 stringency" help="Multiplier on the sequence and topological due-diligence gate. Values above 1 are stricter, below 1 more permissive."/>
+            <param name="snp_compression" type="select" label="SNP compression" help="Collapse invariant columns before scanning. In auto mode compression is enabled when the alignment is longer than 30 kb, has 48 or more taxa, or has more than 600k cells.">
+                <option value="auto" selected="true">Automatic (default)</option>
+                <option value="on">Always compress (--compress-snps)</option>
+                <option value="off">Never compress (--no-compress-snps)</option>
+            </param>
+        </section>
+    </inputs>
+    <outputs>
+        <data name="summary_json" format="json" label="${tool.name} summary JSON on ${on_string}"/>
+        <data name="viz_json" format="json" label="${tool.name} visualization JSON on ${on_string}">
+            <filter>outputs_section['emit_viz']</filter>
+        </data>
+        <data name="report_html" format="html" label="${tool.name} HTML report on ${on_string}">
+            <filter>outputs_section['emit_html']</filter>
+        </data>
+    </outputs>
+    <tests>
+        <!-- 1. Defaults, summary only, on an alignment certified non-recombinant -->
+        <test expect_num_outputs="1">
+            <param name="input_file" value="bat_oas1.fasta" ftype="fasta"/>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;num_taxa&quot;: 18"/>
+                    <has_text text="&quot;length&quot;: 1053"/>
+                    <has_text text="&quot;informative_sites&quot;: 351"/>
+                    <has_text text="&quot;is_non_recombinant_h0&quot;: true"/>
+                    <has_text text="&quot;events&quot;: []"/>
+                    <has_text text="&quot;run_time_ms&quot;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- 2. All three outputs, on an alignment with verified recombination events -->
+        <test expect_num_outputs="3">
+            <param name="input_file" value="camelid.fasta" ftype="fasta"/>
+            <section name="outputs_section">
+                <param name="emit_viz" value="true"/>
+                <param name="emit_html" value="true"/>
+            </section>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;num_taxa&quot;: 212"/>
+                    <has_text text="&quot;is_non_recombinant_h0&quot;: false"/>
+                    <has_text text="&quot;candidate_name&quot;: &quot;LGL237386&quot;"/>
+                    <has_text text="&quot;home_name&quot;: &quot;LGL237352&quot;"/>
+                    <has_text text="&quot;donor_name&quot;: &quot;LGL238048&quot;"/>
+                    <has_text text="&quot;tract_length&quot;: 120"/>
+                    <has_text text="&quot;is_verified&quot;: true"/>
+                </assert_contents>
+            </output>
+            <output name="viz_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;metadata&quot;"/>
+                    <has_text text="&quot;engine_version&quot;: &quot;0.1.2&quot;"/>
+                    <has_text text="&quot;taxa_count&quot;: 212"/>
+                    <has_text text="&quot;breakpoints&quot;"/>
+                    <has_text text="&quot;canonical_manifold&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="report_html" ftype="html">
+                <assert_contents>
+                    <has_text text="&lt;!DOCTYPE html&gt;"/>
+                    <has_text text="&lt;html"/>
+                    <has_text text="LGL237386"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- 3. Custom title propagates into the dashboard and the viz dossier -->
+        <test expect_num_outputs="3">
+            <param name="input_file" value="bat_oas1.fasta" ftype="fasta"/>
+            <param name="title" value="My Cohort"/>
+            <section name="outputs_section">
+                <param name="emit_viz" value="true"/>
+                <param name="emit_html" value="true"/>
+            </section>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;num_taxa&quot;: 18"/>
+                </assert_contents>
+            </output>
+            <output name="viz_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;title&quot;: &quot;My Cohort&quot;"/>
+                </assert_contents>
+            </output>
+            <output name="report_html" ftype="html">
+                <assert_contents>
+                    <has_text text="&lt;title&gt;My Cohort&lt;/title&gt;"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- 4. Advanced parameters reach the command line -->
+        <test expect_num_outputs="1">
+            <param name="input_file" value="camelid.fasta" ftype="fasta"/>
+            <section name="advanced">
+                <param name="landmarks" value="8"/>
+                <param name="alpha" value="0.01"/>
+                <param name="poisson_floor" value="5"/>
+                <param name="tier2_stringency" value="1.5"/>
+                <param name="tier3_stringency" value="1.5"/>
+            </section>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;num_taxa&quot;: 212"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="--landmarks 8"/>
+                <has_text text="--alpha 0.01"/>
+                <has_text text="--poisson-floor 5"/>
+                <has_text text="--tier2-stringency 1.5"/>
+                <has_text text="--tier3-stringency 1.5"/>
+            </assert_command>
+        </test>
+        <!-- 5. SNP compression can be forced off -->
+        <test expect_num_outputs="1">
+            <param name="input_file" value="camelid.fasta" ftype="fasta"/>
+            <section name="advanced">
+                <param name="snp_compression" value="off"/>
+            </section>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;informative_sites&quot;: 230"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="--no-compress-snps"/>
+                <not_has_text text="--compress-snps"/>
+            </assert_command>
+        </test>
+        <!-- 6. SNP compression can be forced on, on a larger alignment -->
+        <test expect_num_outputs="1">
+            <param name="input_file" value="Smc6.fasta" ftype="fasta"/>
+            <section name="advanced">
+                <param name="snp_compression" value="on"/>
+            </section>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;num_taxa&quot;: 20"/>
+                    <has_text text="&quot;length&quot;: 3291"/>
+                    <has_text text="&quot;informative_sites&quot;: 162"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="--compress-snps"/>
+                <not_has_text text="--no-compress-snps"/>
+            </assert_command>
+        </test>
+        <!-- 7. Default (auto) mode emits neither compression flag, and the title
+             falls back to the history element name rather than the staged filename -->
+        <test expect_num_outputs="3">
+            <param name="input_file" value="bat_oas1.fasta" ftype="fasta"/>
+            <section name="outputs_section">
+                <param name="emit_viz" value="true"/>
+                <param name="emit_html" value="true"/>
+            </section>
+            <output name="summary_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;is_non_recombinant_h0&quot;: true"/>
+                </assert_contents>
+            </output>
+            <output name="viz_json" ftype="json">
+                <assert_contents>
+                    <has_text text="&quot;title&quot;: &quot;bat_oas1.fasta&quot;"/>
+                    <not_has_text text="dataset_"/>
+                </assert_contents>
+            </output>
+            <output name="report_html" ftype="html">
+                <assert_contents>
+                    <has_text text="&lt;title&gt;bat_oas1.fasta&lt;/title&gt;"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <not_has_text text="--compress-snps"/>
+                <not_has_text text="--no-compress-snps"/>
+            </assert_command>
+        </test>
+    </tests>
+    <help format="markdown"><![CDATA[
+**What it does**
+
+RhizAeon detects recombination (mosaic sequence tracts) in a nucleotide
+alignment without reconstructing a guide tree. Instead of enumerating all
+O(N^3) sequence triplets like 3SEQ or RDP, it projects the alignment onto a
+continuous metric manifold using prefix distance tensors and deconvolves
+candidate breakpoints with a physical attention force field. Runtime scales
+linearly with cohort size, and multi-parent mosaics (3+ parents) and
+introgression from unsampled "ghost" lineages are resolved natively.
+
+-----
+
+**Input**
+
+A FASTA file containing a nucleotide alignment. All sequences must be aligned
+to the same length; ragged alignments are rejected. Gapped alignments are
+accepted as-is — RhizAeon does not impute or alter gaps. Ambiguity codes are
+treated as missing data.
+
+Compressed (`.fasta.gz`) input is not supported by the engine. Decompress the
+dataset first (for example with **Convert Formats → gzip** or by uploading the
+uncompressed file).
+
+-----
+
+**Outputs**
+
+- **Summary JSON** (always) — run metadata, informative site count, screening
+  results, and one record per detected event with the recombinant
+  (`candidate_name`), the parental context (`home_name`), the donor
+  (`donor_name`), a ghost-donor flag, breakpoint coordinates (`u1`, `u2`),
+  `tract_length`, the Fisher p-value (`p_fisher`) and the physical z-score
+  (`z_phys`). An empty `events` list with `"is_non_recombinant_h0": true`
+  means the alignment was certified non-recombinant under the H0 null.
+- **Visualization JSON** (optional) — the dossier consumed by the HTML report,
+  including per-taxon mosaic segments, breakpoints, manifold coordinates and
+  the recombination landscape.
+- **HTML report** (optional) — a standalone, self-contained dashboard that can
+  be opened directly in a browser.
+
+-----
+
+**Options**
+
+- **Report title** — shown in the visualization JSON and the HTML dashboard.
+  If left blank, the name of the input dataset is used.
+- **Landmarks** (`--landmarks`, default 16) — number of landmarks K placed on
+  the manifold.
+- **Alpha** (`--alpha`, default 0.05) — family-wise significance level for
+  event calling.
+- **Poisson floor** (`--poisson-floor`, default 3) — minimum number of
+  supporting informative sites for a candidate tract.
+- **Tier-2 / Tier-3 stringency** (default 1.0) — multipliers on the successive
+  validation gates (trajectory and donor attribution; sequence and topological
+  due diligence). Raise them to reduce false positives, lower them to increase
+  sensitivity.
+- **SNP compression** — collapses invariant columns to speed up large
+  alignments. In `Automatic` mode it is enabled when the alignment is longer
+  than 30 kb, has 48 or more taxa, or has more than 600k cells.
+
+-----
+
+**Notes**
+
+RhizAeon is single-threaded; there is no thread setting. The tool runs fully
+offline and does not download any model weights.
+    ]]></help>
+    <expand macro="citations"/>
+</tool>

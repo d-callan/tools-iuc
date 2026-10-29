@@ -1,0 +1,54 @@
+# Agent Notes
+
+## Generation notes
+
+## Verified CLI facts (rhizaeon 0.1.2, run in conda)
+
+Ran the real bioconda package to pin down the CLI. Several plan details were wrong:
+
+- **Flags use hyphens, not underscores.** clap derives kebab-case from the Rust field names, so the real flags are `--poisson-floor`, `--tier2-stringency`, `--tier3-stringency`, `--compress-snps`, `--no-compress-snps`. The plan's `--poisson_floor` / `--tier2_stringency` / `--compress_snps` would be rejected with exit code 2. Wrapper uses the hyphenated forms.
+- **`fasta.gz` is NOT supported.** `fs::read_to_string` on a gzip file fails with `Error: stream did not contain valid UTF-8` (exit 1). Input is restricted to `fasta` only; Galaxy decompresses upstream.
+- **`--viz` is long-only** (confirmed in `--help`); `-v` is not accepted.
+- **No `--threads`**; engine is single-threaded. No `GALAXY_SLOTS` used.
+- **No network access needed** — the scan runs fully offline (plan open question 3 resolved).
+- Errors go to **stderr** prefixed `Error:` with exit code 1; clap usage errors exit 2. `detect_errors="aggressive"` covers both.
+
+## Output schema (from `rust/rhizaeon/crates/rhizaeon/src/types.rs` + real output)
+
+Summary JSON (`-o`) top-level keys: `num_taxa`, `length`, `informative_sites`, `is_non_recombinant_h0`, `screening`, `events`, `run_time_ms`. Event records carry `candidate_name`, `home_name`, `donor_name`, `is_ghost_donor`, `u1`, `u2`, `tract_length`, `p_fisher`, `z_phys` as the plan described.
+
+The "Certified Non-Recombinant (H0 Null)" string is **stdout only** — the JSON encodes it as `"is_non_recombinant_h0": true`. Test assertions use the JSON field, not the banner text.
+
+Viz JSON is plain JSON (no custom datatype needed) with a `metadata` block whose `title` reflects `--title`. HTML is a self-contained dashboard with `<title>…</title>`.
+
+## Test data choice
+
+- `bat_oas1.fasta` (18 taxa x 1053 bp) → H0 null path, 0 events. Fast (~30 ms).
+- `camelid.fasta` (212 taxa x 288 bp) → **2 verified events**, so it exercises the non-null event path. Chosen over `Smc6.fasta`, which also returns H0 null and therefore adds no coverage.
+## Final state
+
+- `rhizaeon.xml` + `macros.xml` + `.shed.yml` + 3 test-data FASTAs. `planemo lint` clean, all 7 tests pass.
+- Citation: the plan's open question 1 was answered with the bioRxiv DOI, which I verified resolves to the RhizAeon paper itself — "Clean Breaks: Attention Force Field Deconvolution of Recombination Across Sequence Manifolds", Kosakovsky Pond et al., bioRxiv 2026, DOI `10.64898/2026.10.19.760237`. Used as a `<citation type="doi">` rather than the plan's `@misc` GitHub bibtex, since a real DOI now exists.
+- No bio.tools xref: `search_bio_tools` returns nothing for rhizaeon, so the `bio_tools` macro is omitted entirely (not defined in macros.xml, not expanded).
+- `.shed.yml` categories: `Sequence Analysis` + `Phylogenetics` (both from the Tool Shed API list).
+
+## Gotcha worth remembering
+
+An XML comment containing the literal string `--threads` breaks parsing — XML forbids `--` inside comments. The lint error surfaced as "Double hyphen within comment" pointing at macros.xml. Reworded the comment to avoid any double hyphen.
+
+## Test coverage rationale
+
+7 tests: defaults/H0-null, all-three-outputs on the event-positive camelid alignment, custom title propagation (checked in both viz JSON and HTML `<title>`), advanced params via `assert_command`, compression forced off, compression forced on (Smc6), and auto mode emitting neither flag. Assertions check concrete values (taxa counts, informative site counts, event names, tract lengths) rather than mere file existence. `run_time_ms` is only asserted as a key, never a value, since it varies per run.
+## Review round 1 fixes
+
+Two issues raised, both fixed:
+
+1. **Title default was the staged filename.** The engine falls back to `input.file_stem()`, and Galaxy stages inputs as `dataset_NNNN.dat`, so a blank title produced `<title>dataset_1234</title>`. Fixed Galaxy-side in the command template:
+   `#set $title_value = str($title) if str($title) else str($input_file.element_identifier)`
+   `--title` is now always passed explicitly. `element_identifier` is the user-visible history name, which is what the help text promises. Test 7 asserts the title equals `bat_oas1.fasta` and uses `not_has_text text="dataset_"` to pin the regression.
+
+2. **`.shed.yml` owner** changed `d-callan` → `iuc`, and `remote_repository_url` updated to the `galaxyproject/tools-iuc` path to match.
+
+## Note on the `--title` validator
+
+The regex validator on `title` rejects characters outside `[A-Za-z0-9 _.,:;/()[]&%+-]`. This is deliberate: the value is interpolated into a single-quoted shell string, and the validator keeps quotes/backticks/`$` out of it. The Galaxy-side default (`element_identifier`) is not run through the validator, but Galaxy sanitises history names and the value is still single-quoted in the command, so this is safe.
